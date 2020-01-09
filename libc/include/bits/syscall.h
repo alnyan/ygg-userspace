@@ -26,5 +26,9 @@ int gettimeofday(struct timeval *tv, struct timezone *tz);
 int reboot(int magic1, int magic2, unsigned int cmd, void *arg);
 int access(const char *filename, int mode);
 int waitpid(int pid, int *status);
+int unlink(const char *pathname);
+int mkdir(const char *pathname, int mode);
+int creat(const char *pathname, int mode);
+int rmdir(const char *pathname);
 
 __attribute__((noreturn)) void exit(int code);

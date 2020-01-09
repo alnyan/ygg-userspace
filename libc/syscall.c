@@ -163,6 +163,18 @@ int waitpid(int pid, int *status) {
     return SET_ERRNO(int, ASM_SYSCALL2(SYSCALL_NRX_WAITPID, pid, status));
 }
 
+int mkdir(const char *pathname, int mode) {
+    return SET_ERRNO(int, ASM_SYSCALL2(SYSCALL_NR_MKDIR, pathname, mode));
+}
+
+int unlink(const char *pathname) {
+    return SET_ERRNO(int, ASM_SYSCALL1(SYSCALL_NR_UNLINK, pathname));
+}
+
+int rmdir(const char *pathname) {
+    return SET_ERRNO(int, ASM_SYSCALL1(SYSCALL_NR_RMDIR, pathname));
+}
+
 // Although sbrk() is implemented in userspace, I guess it should also be here
 void *sbrk(intptr_t inc) {
     if (inc == 0) {

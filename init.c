@@ -46,6 +46,9 @@ static int b_curs(const char *arg);
 static int b_sleep(const char *arg);
 static int b_help(const char *arg);
 static int b_clear(const char *arg);
+static int b_wr(const char *arg);
+static int b_rm(const char *arg);
+static int b_mkdir(const char *arg);
 
 static struct builtin builtins[] = {
     {
@@ -62,6 +65,21 @@ static struct builtin builtins[] = {
         "cat",
         "Print file contents" /* Concatenate files */,
         b_cat
+    },
+    {
+        "wr",
+        "",
+        b_wr,
+    },
+    {
+        "rm",
+        "Remove file/directory",
+        b_rm
+    },
+    {
+        "mkdir",
+        "Create a directory",
+        b_mkdir
     },
     {
         "sleep",
@@ -102,6 +120,134 @@ static int b_pwd(const char *arg) {
     } else {
         puts(buf);
     }
+    return 0;
+}
+
+static int rm_node(const char *path) {
+    DIR *dir;
+    struct dirent *ent;
+    struct stat st;
+    int res;
+
+    if ((res = stat(path, &st)) != 0) {
+        perror(path);
+        return res;
+    }
+
+    if ((st.st_mode & S_IFMT) == S_IFDIR) {
+        char child_path[512];
+
+        if (!(dir = opendir(path))) {
+            perror(path);
+            return -1;
+        }
+
+        res = 0;
+        while ((ent = readdir(dir))) {
+            if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
+                snprintf(child_path, sizeof(child_path), "%s/%s", path, ent->d_name);
+                if ((res = rm_node(child_path)) != 0) {
+                    break;
+                }
+            }
+        }
+
+        closedir(dir);
+
+        if (res == 0) {
+            if ((res = rmdir(path)) != 0) {
+                perror(path);
+            }
+        }
+
+        return res;
+    } else {
+        if ((res = unlink(path)) != 0) {
+            perror(path);
+        }
+
+        return res;
+    }
+}
+
+static int b_rm(const char *arg) {
+    int res;
+    int is_r = 0;
+    if (!arg) {
+        return -1;
+    }
+
+    if (!strncmp(arg, "-r ", 3)) {
+        arg += 3;
+        is_r = 1;
+    }
+
+    if (!is_r) {
+        if ((res = unlink(arg)) < 0) {
+            perror(arg);
+        }
+    } else {
+        rm_node(arg);
+    }
+
+    return res;
+}
+
+static int b_mkdir(const char *arg) {
+    int res;
+    if (!arg) {
+        return -1;
+    }
+
+    if ((res = mkdir(arg, 0755)) < 0) {
+        perror(arg);
+    }
+
+    return res;
+}
+
+static int b_wr(const char *arg) {
+    char buf[512];
+    char c;
+    size_t l = 0;
+    int fd;
+    ssize_t bwr;
+
+    if (!arg) {
+        return -1;
+    }
+
+    if ((fd = open(arg, O_WRONLY | O_TRUNC | O_CREAT, 0644)) < 0) {
+        perror(arg);
+        return fd;
+    }
+
+    printf("Type \"---\" to stop writing\n");
+
+    while (1) {
+        if (read(STDIN_FILENO, &c, 1) < 0) {
+            break;
+        }
+
+        assert(l < sizeof(buf));
+
+        if (c == '\n') {
+            if (!strncmp(buf, "---", 3)) {
+                break;
+            }
+            buf[l] = '\n';
+            write(fd, buf, l + 1);
+            printf("\n");
+            l = 0;
+            continue;
+        } else if (c >= ' ') {
+            buf[l++] = c;
+            printf("%c", c);
+        }
+    }
+
+    close(fd);
+
     return 0;
 }
 
