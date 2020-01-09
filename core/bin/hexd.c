@@ -22,7 +22,7 @@ static void line_print(size_t off, const char *line, size_t len) {
     printf("| ");
     for (size_t i = 0; i < len; ++i) {
         // TODO: isprint?
-        if (line[i] >= ' ') {
+        if (((uint8_t) line[i]) >= ' ') {
             printf("%c", line[i]);
         } else {
             printf(".");
