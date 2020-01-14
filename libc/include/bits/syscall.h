@@ -30,5 +30,12 @@ int unlink(const char *pathname);
 int mkdir(const char *pathname, int mode);
 int creat(const char *pathname, int mode);
 int rmdir(const char *pathname);
+int mount(const char *dev_name, const char *dir_name, const char *type, unsigned long flags, void *data);
+int setuid(uid_t uid);
+int setgid(gid_t gid);
+uid_t getuid(void);
+gid_t getgid(void);
+int chmod(const char *path, mode_t mode);
+int chown(const char *path, uid_t uid, gid_t gid);
 
 __attribute__((noreturn)) void exit(int code);

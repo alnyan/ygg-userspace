@@ -48,6 +48,9 @@ static int ls_dir(const char *path, int flags) {
                     case S_IFCHR:
                         t = 'c';
                         break;
+                    case S_IFLNK:
+                        t = 'l';
+                        break;
                     default:
                         t = '?';
                         break;
@@ -68,7 +71,7 @@ static int ls_dir(const char *path, int flags) {
                     printf("%4u %4u %8u ",
                         ent_stat.st_gid,
                         ent_stat.st_uid,
-                        ent_stat.st_blocks);
+                        ent_stat.st_size);
                 }
             }
 

@@ -39,6 +39,69 @@ struct builtin {
     int (*run) (const char *arg);
 };
 
+static int atoi(const char *in) {
+    int r = 0;
+    char c;
+    while ((c = *in)) {
+        if (c > '9' || c < '0') {
+            break;
+        }
+
+        r *= 10;
+        r += c - '0';
+
+        ++in;
+    }
+    return r;
+}
+
+static int from_oct(int *res, const char *in) {
+    int r = 0;
+    while (*in) {
+        if (*in < '0' || *in > '7') {
+            return -1;
+        }
+        r <<= 3;
+        r |= *in - '0';
+        ++in;
+    }
+    *res = r;
+    return 0;
+}
+
+static int readline(char *buf, size_t lim) {
+    int len = 0;
+    int cnt;
+    char c;
+
+    while (1) {
+        if ((cnt = read(STDIN_FILENO, &c, 1)) != 1) {
+            return -1;
+        }
+
+        if (len == lim) {
+            printf("Input line is too long\n");
+            return -1;
+        }
+
+        if (c == '\n') {
+            putchar(c);
+            buf[len] = 0;
+            break;
+        } else if (c == '\b') {
+            if (len) {
+                buf[--len] = 0;
+                printf("\033[D \033[D");
+            }
+        } else if (c >= ' ') {
+            putchar(c);
+            buf[len++] = c;
+        }
+    }
+
+    return len;
+}
+
 static int b_cd(const char *path);
 static int b_pwd(const char *_);
 static int b_cat(const char *path);
@@ -49,6 +112,13 @@ static int b_clear(const char *arg);
 static int b_wr(const char *arg);
 static int b_rm(const char *arg);
 static int b_mkdir(const char *arg);
+static int b_dir(const char *arg);
+static int b_fork(const char *arg);
+static int b_whoami(const char *arg);
+static int b_abort(const char *arg);
+static int b_stat(const char *arg);
+static int b_chmown(const char *arg);
+static int b_drop(const char *arg);
 
 static struct builtin builtins[] = {
     {
@@ -90,6 +160,41 @@ static struct builtin builtins[] = {
         "clear",
         "Clear terminal",
         b_clear,
+    },
+    {
+        "dir",
+        "Print directory listing",
+        b_dir,
+    },
+    {
+        "fork",
+        "Test fork",
+        b_fork,
+    },
+    {
+        "whoami",
+        "Who am I?",
+        b_whoami,
+    },
+    {
+        "abort",
+        "Suicide",
+        b_abort,
+    },
+    {
+        "chmown",
+        "chmod + chown",
+        b_chmown,
+    },
+    {
+        "stat",
+        "Display file/directory information",
+        b_stat,
+    },
+    {
+        "drop",
+        "Become a peasant",
+        b_drop,
     },
     {
         "help",
@@ -170,6 +275,77 @@ static int rm_node(const char *path) {
     }
 }
 
+static int b_fork(const char *arg) {
+    int pid = fork();
+
+    if (pid < 0) {
+        perror("fork()");
+        return pid;
+    }
+
+    if (pid == 0) {
+        printf("Child sleeps\n");
+        usleep(10000000);
+        printf("Child is done sleeping\n");
+        exit(0);
+    }
+
+    printf("Child pid: %d\n", pid);
+
+    return 0;
+}
+
+static int b_chmown(const char *arg) {
+    mode_t accmode = 0;
+    uid_t uid = 0;
+    gid_t gid = 0;
+
+    char buf[64];
+    int res;
+
+    if (!arg) {
+        return -1;
+    }
+
+    // Check if file exists
+    if ((res = access(arg, F_OK)) != 0) {
+        perror(arg);
+        return res;
+    }
+
+    printf("Mode: ");
+    if ((res = readline(buf, sizeof(buf))) < 0) {
+        return res;
+    }
+    if ((res = from_oct(&accmode, buf)) != 0) {
+        return res;
+    }
+
+    printf("UID: ");
+    if ((res = readline(buf, sizeof(buf))) < 0) {
+        return res;
+    }
+    uid = atoi(buf);
+
+    printf("GID: ");
+    if ((res = readline(buf, sizeof(buf))) < 0) {
+        return res;
+    }
+    gid = atoi(buf);
+
+    if ((res = chown(arg, uid, gid)) != 0) {
+        perror(arg);
+        return res;
+    }
+
+    if ((res = chmod(arg, accmode)) != 0) {
+        perror(arg);
+        return res;
+    }
+
+    return 0;
+}
+
 static int b_rm(const char *arg) {
     int res;
     int is_r = 0;
@@ -206,12 +382,70 @@ static int b_mkdir(const char *arg) {
     return res;
 }
 
+static int b_dir(const char *arg) {
+    assert(arg);
+    DIR *dir;
+    struct dirent *ent;
+
+    if (!(dir = opendir(arg))) {
+        perror(arg);
+        return -1;
+    }
+
+    while ((ent = readdir(dir))) {
+        printf("%c %s\n", ent->d_type == DT_DIR ? 'd' : 'f', ent->d_name);
+    }
+
+    closedir(dir);
+
+    return 0;
+}
+
+static int b_abort(const char *arg) {
+    abort();
+    return 0;
+}
+
+static int b_stat(const char *arg) {
+    if (!arg) {
+        return -1;
+    }
+
+    struct stat st;
+    int res;
+
+    if ((res = stat(arg, &st)) != 0) {
+        perror(arg);
+        return res;
+    }
+
+    printf("dev     %u\n", st.st_dev);
+    printf("rdev    %u\n", st.st_rdev);
+
+    printf("inode   %u\n", st.st_ino);
+
+    printf("mode    %u\n", st.st_mode);
+    printf("nlink   %u\n", st.st_nlink);
+
+    printf("uid     %u\n", st.st_uid);
+    printf("gid     %u\n", st.st_gid);
+
+    printf("size    %u\n", st.st_size);
+    printf("blocks  %u\n", st.st_blocks);
+    printf("blksize %u\n", st.st_blksize);
+
+    printf("atime   %u\n", st.st_atime);
+    printf("mtime   %u\n", st.st_mtime);
+    printf("ctime   %u\n", st.st_ctime);
+
+    return 0;
+}
+
 static int b_wr(const char *arg) {
-    char buf[512];
-    char c;
-    size_t l = 0;
     int fd;
     ssize_t bwr;
+    char buf[512];
+    int line_len;
 
     if (!arg) {
         return -1;
@@ -222,31 +456,40 @@ static int b_wr(const char *arg) {
         return fd;
     }
 
-    printf("Type \"---\" to stop writing\n");
+    printf("Type \"EOF\" to stop writing\n");
 
     while (1) {
-        if (read(STDIN_FILENO, &c, 1) < 0) {
+        if ((line_len = readline(buf, sizeof(buf))) < 0) {
             break;
         }
 
-        assert(l < sizeof(buf));
-
-        if (c == '\n') {
-            if (!strncmp(buf, "---", 3)) {
-                break;
-            }
-            buf[l] = '\n';
-            write(fd, buf, l + 1);
-            printf("\n");
-            l = 0;
-            continue;
-        } else if (c >= ' ') {
-            buf[l++] = c;
-            printf("%c", c);
+        if (!strcmp(buf, "EOF")) {
+            break;
         }
+
+        if (write(fd, buf, line_len) != line_len) {
+            break;
+        }
+        char c = '\n';
+        write(fd, &c, 1);
     }
 
     close(fd);
+
+    return 0;
+}
+
+static int b_drop(const char *arg) {
+    int res;
+
+    if ((res = setuid(1000)) != 0) {
+        perror("setuid()");
+        return res;
+    }
+    if ((res = setgid(1000)) != 0) {
+        perror("setgid()");
+        return res;
+    }
 
     return 0;
 }
@@ -368,6 +611,15 @@ static int b_clear(const char *arg) {
     return 0;
 }
 
+static int b_whoami(const char *arg) {
+    uid_t uid = getuid();
+    gid_t gid = getgid();
+
+    printf("%d:%d\n", uid, gid);
+
+    return 0;
+}
+
 static int b_help(const char *arg) {
     if (arg) {
         // Describe a specific command
@@ -450,6 +702,9 @@ static int cmd_subproc_exec(const char *abs_path, const char *cmd, const char *e
         if (waitpid(pid, &status) != 0) {
             perror("waitpid()");
         }
+        if (status != 0) {
+            printf("%d finished with status: %d\n", pid, status);
+        }
         return 0;
     }
 }
@@ -501,10 +756,29 @@ int main(int argc, char **argv) {
         printf("Won't work if PID is not 1\n");
         return -1;
     }
+
     char linebuf[512];
     char c;
     size_t l = 0;
     int res;
+
+    // Try to mount devfs
+    const char *automount_dev = "/dev/sda1";
+
+    if ((res = mount(NULL, "/dev", "devfs", 0, NULL)) != 0) {
+        perror("Failed to mount devfs");
+    }
+    // Mount sda1 if present
+    if (access(automount_dev, F_OK) == 0) {
+        printf("%s exists, trying to mount at /mnt\n", automount_dev);
+
+        if ((res = mount(automount_dev, "/mnt", "ext2", 0, NULL)) != 0) {
+            perror(automount_dev);
+        }
+    }
+
+    //setuid(1000);
+    //setgid(1000);
 
     prompt();
 
@@ -522,6 +796,7 @@ int main(int argc, char **argv) {
 
     while (1) {
         if (read(STDIN_FILENO, &c, 1) < 0) {
+            printf("Read failed\n");
             break;
         }
 

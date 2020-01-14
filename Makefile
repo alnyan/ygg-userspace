@@ -15,8 +15,8 @@ STAGE_BIN=$(STAGE)/init \
 
 CFLAGS=-ffreestanding \
 	   -nostdlib \
-	   -mno-sse \
-	   -mno-sse2 \
+	   -msse \
+	   -msse2 \
 	   -Ilibc/include \
 	   -ggdb \
 	   -O0 \
@@ -59,6 +59,7 @@ mkdirs:
 
 mkstage-etc:
 	mkdir -p $(STAGE)/dev $(STAGE)/mnt $(STAGE)/bin
+	chmod +x $(STAGE)/etc/file.txt
 	cp -r etc $(STAGE)
 
 # Application building

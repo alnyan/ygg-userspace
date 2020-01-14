@@ -61,6 +61,21 @@
         rax; \
     })
 
+#define ASM_SYSCALL5(r0, r1, r2, r3, r4, r5)        ({ \
+        ASM_REGISTER(rdi) = (uint64_t) (r1); \
+        ASM_REGISTER(rsi) = (uint64_t) (r2); \
+        ASM_REGISTER(rdx) = (uint64_t) (r3); \
+        ASM_REGISTER(r10) = (uint64_t) (r4); \
+        ASM_REGISTER( r8) = (uint64_t) (r5); \
+        /*
+         * Should be the last one because memory accesses for arguments
+         * fuck up %rax
+         */ \
+        ASM_REGISTER(rax) = (uint64_t) (r0); \
+        asm volatile ("syscall":::"memory", "rax", "rdi", "rsi", "rdx", "r10", "r8"); \
+        rax; \
+    })
+
 #define SET_ERRNO(t, r)                     ({ \
         t res = (t) r; \
         if (res < 0) { \
@@ -173,6 +188,34 @@ int unlink(const char *pathname) {
 
 int rmdir(const char *pathname) {
     return SET_ERRNO(int, ASM_SYSCALL1(SYSCALL_NR_RMDIR, pathname));
+}
+
+int mount(const char *dev_name, const char *dir_name, const char *type, unsigned long flags, void *data) {
+    return SET_ERRNO(int, ASM_SYSCALL5(SYSCALL_NR_MOUNT, dev_name, dir_name, type, flags, data));
+}
+
+int setuid(uid_t uid) {
+    return SET_ERRNO(int, ASM_SYSCALL1(SYSCALL_NR_SETUID, uid));
+}
+
+int setgid(gid_t gid) {
+    return SET_ERRNO(int, ASM_SYSCALL1(SYSCALL_NR_SETGID, gid));
+}
+
+uid_t getuid(void) {
+    return (uid_t) ASM_SYSCALL0(SYSCALL_NR_GETUID);
+}
+
+gid_t getgid(void) {
+    return (gid_t) ASM_SYSCALL0(SYSCALL_NR_GETGID);
+}
+
+int chmod(const char *path, mode_t mode) {
+    return SET_ERRNO(int, ASM_SYSCALL2(SYSCALL_NR_CHMOD, path, mode));
+}
+
+int chown(const char *path, uid_t uid, gid_t gid) {
+    return SET_ERRNO(int, ASM_SYSCALL3(SYSCALL_NR_CHOWN, path, uid, gid));
 }
 
 // Although sbrk() is implemented in userspace, I guess it should also be here
