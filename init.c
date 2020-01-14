@@ -30,9 +30,6 @@
 
 extern __attribute__((noreturn)) void abort(void);
 
-#define assert(x) \
-    if (!(x)) abort()
-
 struct builtin {
     const char *name;
     const char *desc;
