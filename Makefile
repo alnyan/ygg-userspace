@@ -11,7 +11,8 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/hexd \
 		  $(STAGE)/bin/ls \
 		  $(STAGE)/bin/reboot \
-		  $(STAGE)/bin/date
+		  $(STAGE)/bin/date \
+		  $(STAGE)/bin/uname
 
 usr_CFLAGS=-msse \
 	   	   -msse2 \
