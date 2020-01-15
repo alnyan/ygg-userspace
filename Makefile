@@ -5,8 +5,6 @@ KERNEL_HDRS?=kernel-hdr
 CC=x86_64-elf-yggdrasil-gcc
 
 DIRS=$(O) \
-	 $(O)/libc \
-	 $(O)/lib \
 	 $(STAGE)
 HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
@@ -18,6 +16,8 @@ usr_CFLAGS=-msse \
 	   	   -msse2 \
 	   	   -ggdb \
 	   	   -O0 \
+		   -Wall \
+		   -Werror \
 		   -ffreestanding
 
 usr_LDFLAGS=-lgcc \

@@ -15,7 +15,6 @@
 #define COLOR_RESET     "\033[0m"
 
 static int ls_dir(const char *path, int flags) {
-    int res;
     DIR *dir;
     struct dirent *ent;
     struct stat ent_stat;

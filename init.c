@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -27,8 +29,6 @@
 #define BOX_VERT        "\263"
 
 //
-
-extern __attribute__((noreturn)) void abort(void);
 
 struct builtin {
     const char *name;
@@ -102,7 +102,6 @@ static int readline(char *buf, size_t lim) {
 static int b_cd(const char *path);
 static int b_pwd(const char *_);
 static int b_cat(const char *path);
-static int b_curs(const char *arg);
 static int b_sleep(const char *arg);
 static int b_help(const char *arg);
 static int b_clear(const char *arg);
@@ -116,6 +115,8 @@ static int b_abort(const char *arg);
 static int b_stat(const char *arg);
 static int b_chmown(const char *arg);
 static int b_drop(const char *arg);
+static int b_app(const char *arg);
+static int b_cp(const char *arg);
 
 static struct builtin builtins[] = {
     {
@@ -192,6 +193,16 @@ static struct builtin builtins[] = {
         "drop",
         "Become a peasant",
         b_drop,
+    },
+    {
+        "app",
+        "Append a file",
+        b_app,
+    },
+    {
+        "cp",
+        "Copy a file",
+        b_cp,
     },
     {
         "help",
@@ -314,7 +325,7 @@ static int b_chmown(const char *arg) {
     if ((res = readline(buf, sizeof(buf))) < 0) {
         return res;
     }
-    if ((res = from_oct(&accmode, buf)) != 0) {
+    if ((res = from_oct((int *) &accmode, buf)) != 0) {
         return res;
     }
 
@@ -339,6 +350,146 @@ static int b_chmown(const char *arg) {
         perror(arg);
         return res;
     }
+
+    return 0;
+}
+
+static char *basename(char *path) {
+    char *p = strrchr(path, '/');
+    if (!p) {
+        return path;
+    } else {
+        return p + 1;
+    }
+}
+
+static int b_cp(const char *arg) {
+    char src_path[256];
+    char dst_path[256];
+    struct stat st;
+    int fd_src, fd_dst;
+    int res;
+
+    const char *spc = strchr(arg, ' ');
+    if (!spc) {
+        printf("Usage: cp <src> <dst>");
+        return -1;
+    }
+
+    strncpy(src_path, arg, spc - arg);
+    strcpy(dst_path, spc + 1);
+
+    // Check that source is a file
+    if ((res = stat(src_path, &st)) != 0) {
+        perror(src_path);
+        return res;
+    } else if ((st.st_mode & S_IFMT) != S_IFREG) {
+        printf("Not a file: %s\n", src_path);
+        return -1;
+    }
+
+    // Check if destination is a directory
+    if ((res = stat(dst_path, &st)) == 0) {
+        if ((st.st_mode & S_IFMT) == S_IFDIR) {
+            const char *name = basename(src_path);
+            size_t len = strlen(dst_path);
+            dst_path[len++] = '/';
+            strcpy(&dst_path[len], name);
+            // TODO: check that this file is not some kind of a special device
+        } else if ((st.st_mode & S_IFMT) != S_IFREG) {
+            printf("Invalid destination: %s\n", dst_path);
+            return -1;
+        }
+    }
+
+    if ((fd_src = open(src_path, O_RDONLY, 0)) < 0) {
+        perror(src_path);
+        return -1;
+    }
+
+    // TODO: does cp copy file mode?
+    if ((fd_dst = open(dst_path, O_WRONLY | O_TRUNC | O_CREAT, 0644)) < 0) {
+        close(fd_src);
+        perror(dst_path);
+        return -1;
+    }
+
+    char buf[512];
+    ssize_t bread;
+    ssize_t bwrite;
+
+    while ((bread = read(fd_src, buf, sizeof(buf))) > 0) {
+        if ((bwrite = write(fd_dst, buf, bread)) != bread) {
+            printf("Write failed\n");
+            break;
+        }
+    }
+
+    close(fd_dst);
+    close(fd_src);
+
+    return 0;
+}
+
+static int b_app(const char *arg) {
+    if (!arg) {
+        return -1;
+    }
+
+    int opt = O_APPEND | O_WRONLY;
+
+    while (1) {
+        while (isspace(*arg)) {
+            ++arg;
+        }
+        if (arg[0] == '-' && isalpha(arg[1])) {
+            // Some flag
+            switch (arg[1]) {
+            case 'c':
+                opt |= O_CREAT;
+                break;
+            case 't':
+                opt |= O_TRUNC;
+                break;
+            default:
+                printf("Unknown flag: -%c\n", arg[1]);
+                return -1;
+            }
+            arg += 2;
+        } else {
+            break;
+        }
+    }
+
+    int fd = open(arg, opt, 0644);
+    if (fd < 0) {
+        perror(arg);
+        return fd;
+    }
+
+    printf("Type \"EOF\" to stop writing\n");
+
+    char buf[512];
+    int line_len;
+
+    while (1) {
+        if ((line_len = readline(buf, sizeof(buf))) < 0) {
+            break;
+        }
+
+        if (!strcmp(buf, "EOF")) {
+            break;
+        }
+
+        if (write(fd, buf, line_len) < 0) {
+            printf("Write failed\n");
+            break;
+        }
+        *(char *) &line_len = '\n';
+        write(fd, &line_len, 1);
+    }
+
+    close(fd);
 
     return 0;
 }
@@ -440,7 +591,6 @@ static int b_stat(const char *arg) {
 
 static int b_wr(const char *arg) {
     int fd;
-    ssize_t bwr;
     char buf[512];
     int line_len;
 
@@ -510,74 +660,6 @@ static int b_cat(const char *arg) {
     }
 
     close(fd);
-
-    return 0;
-}
-
-static int b_curs(const char *arg) {
-    char c;
-
-    size_t w = 60;
-    size_t h = 20;
-    size_t off_y = (25 - h) / 2 + 1;
-    size_t off_x = (80 - w) / 2;
-
-    const char *lines[18] = {
-        NULL,
-        "Demo something",
-        NULL,
-        "Slow as hell"
-    };
-
-    clear();
-
-    while (1) {
-        printf("\033[47;30m");
-
-        curs_set(off_y, off_x);
-        printf(BOX_ANGLE_UL);
-        for (size_t i = 0; i < w; ++i) {
-            printf(BOX_HOR);
-        }
-        printf(BOX_ANGLE_UR);
-
-        for (size_t i = 0; i < h - 2; ++i) {
-            curs_set(off_y + 1 + i, off_x);
-            printf(BOX_VERT);
-            for (size_t j = 0; j < w; ++j) {
-                printf(" ");
-            }
-            if (lines[i]) {
-                curs_set(off_y + 1 + i, off_x + (w - strlen(lines[i])) / 2);
-                printf("%s", lines[i]);
-            }
-            curs_set(off_y + 1 + i, off_x + w + 1);
-            printf(BOX_VERT);
-        }
-
-        curs_set(off_y + h - 3, off_x + (w - 8) / 2);
-        printf("\033[0m\033[7m[ OK ]\033[47;30m");
-        curs_set(off_y + h - 1, off_x);
-        printf(BOX_ANGLE_LL);
-        for (size_t i = 0; i < w; ++i) {
-            printf(BOX_HOR);
-        }
-        printf(BOX_ANGLE_LR);
-
-        printf("\033[0m");
-
-        curs_set(1, 1);
-
-        if (read(STDIN_FILENO, &c, 1) < 0) {
-            break;
-        }
-
-        if (c == 'q' || c == '\n') {
-            break;
-        }
-    }
-
-    curs_set(1, 1);
 
     return 0;
 }
@@ -683,7 +765,6 @@ static int cmd_subproc_exec(const char *abs_path, const char *cmd, const char *e
     argp[argc + 1] = NULL;
 
     int pid = fork();
-    int res;
     int status;
 
     switch (pid) {
@@ -738,10 +819,13 @@ static int cmd_exec(const char *line) {
         return cmd_subproc_exec(cmd, cmd, e);
     }
     // Try to execute binary from /bin
-    char path_buf[512];
-    snprintf(path_buf, sizeof(path_buf), "/bin/%s", cmd);
-    if (access(path_buf, X_OK) == 0) {
-        return cmd_subproc_exec(path_buf, cmd, e);
+    // if name has no slashes
+    if (!strchr(cmd, '/')) {
+        char path_buf[512];
+        snprintf(path_buf, sizeof(path_buf), "/bin/%s", cmd);
+        if (access(path_buf, X_OK) == 0) {
+            return cmd_subproc_exec(path_buf, cmd, e);
+        }
     }
 
     printf("%s: Unknown command\n", cmd);
