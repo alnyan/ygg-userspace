@@ -10,7 +10,8 @@ HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/hexd \
 		  $(STAGE)/bin/ls \
-		  $(STAGE)/bin/reboot
+		  $(STAGE)/bin/reboot \
+		  $(STAGE)/bin/date
 
 usr_CFLAGS=-msse \
 	   	   -msse2 \
