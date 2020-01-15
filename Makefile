@@ -12,7 +12,9 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/ls \
 		  $(STAGE)/bin/reboot \
 		  $(STAGE)/bin/date \
-		  $(STAGE)/bin/uname
+		  $(STAGE)/bin/uname \
+		  $(STAGE)/bin/mount \
+		  $(STAGE)/bin/umount
 
 usr_CFLAGS=-msse \
 	   	   -msse2 \

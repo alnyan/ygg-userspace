@@ -550,7 +550,11 @@ static int b_dir(const char *arg) {
 }
 
 static int b_abort(const char *arg) {
+    printf("Before SIGUSR1\n");
+    raise(SIGUSR1);
+    printf("After SIGUSR1\n");
     abort();
+    printf("This code should not run\n");
     return 0;
 }
 
@@ -832,31 +836,22 @@ static int cmd_exec(const char *line) {
     return -1;
 }
 
+static void sigusr1_handler(int signum) {
+    printf("SIGUSR1 received and handled\n");
+}
+
 int main(int argc, char **argv) {
     if (getpid() != 1) {
         printf("Won't work if PID is not 1\n");
         return -1;
     }
 
+    signal(SIGUSR1, sigusr1_handler);
+
     char linebuf[512];
     char c;
     size_t l = 0;
     int res;
-
-    // Try to mount devfs
-    const char *automount_dev = "/dev/sda1";
-
-    if ((res = mount(NULL, "/dev", "devfs", 0, NULL)) != 0) {
-        perror("Failed to mount devfs");
-    }
-    // Mount sda1 if present
-    if (access(automount_dev, F_OK) == 0) {
-        printf("%s exists, trying to mount at /mnt\n", automount_dev);
-
-        if ((res = mount(automount_dev, "/mnt", "ext2", 0, NULL)) != 0) {
-            perror(automount_dev);
-        }
-    }
 
     //setuid(1000);
     //setgid(1000);
