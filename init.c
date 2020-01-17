@@ -1,4 +1,5 @@
 #include <sys/fcntl.h>
+#include <sys/select.h>
 #include <sys/reboot.h>
 #include <signal.h>
 #include <dirent.h>
@@ -9,6 +10,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <pwd.h>
 
 // Cursor helpers
 
@@ -35,6 +37,12 @@ struct builtin {
     const char *desc;
     int (*run) (const char *arg);
 };
+
+static struct utsname _utsname;
+static uid_t sh_uid;
+static char sh_user[64];
+
+static void update_prompt(void);
 
 static int atoi(const char *in) {
     int r = 0;
@@ -642,6 +650,8 @@ static int b_drop(const char *arg) {
         return res;
     }
 
+    update_prompt();
+
     return 0;
 }
 
@@ -730,7 +740,12 @@ static void prompt(void) {
         cwd[0] = '?';
         cwd[1] = 0;
     }
-    printf("\033[36mygg\033[0m %s > ", cwd);
+
+    if (sh_user[0]) {
+        printf("\033[35m%s\033[0m@\033[36m%s\033[0m %s > ", sh_user, _utsname.nodename, cwd);
+    } else {
+        printf("\033[35m%u\033[0m@\033[36m%s\033[0m %s > ", sh_uid, _utsname.nodename, cwd);
+    }
 }
 
 static int cmd_subproc_exec(const char *abs_path, const char *cmd, const char *e) {
@@ -840,6 +855,104 @@ static void sigusr1_handler(int signum) {
     printf("SIGUSR1 received and handled\n");
 }
 
+#define KEY_UP      (256)
+#define KEY_DOWN    (257)
+#define KEY_RIGHT   (258)
+#define KEY_LEFT    (259)
+
+// With support for escape sequences
+static int getch_del(void) {
+    struct timeval tv = {
+        .tv_sec = 0,
+        .tv_usec = 500000
+    };
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    int res;
+
+    if ((res = select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv)) < 0) {
+        return res;
+    }
+
+    if (FD_ISSET(STDIN_FILENO, &fds)) {
+        res = 0;
+        if (read(STDIN_FILENO, &res, 1) != 1) {
+            return -1;
+        }
+        return res;
+    } else {
+        return -1;
+    }
+}
+
+static int escape_read(void) {
+    // Maybe [
+    int c = getch_del();
+
+    if (c < 0) {
+        return '\033';
+    }
+
+    if (c != '[') {
+        return -1;
+    }
+
+    c = getch_del();
+
+    switch (c) {
+    case 'A':
+        return KEY_UP;
+    case 'B':
+        return KEY_DOWN;
+    case 'C':
+        return KEY_RIGHT;
+    case 'D':
+        return KEY_LEFT;
+    default:
+        return -1;
+    }
+}
+
+static int getch(void) {
+    char c;
+
+    if (read(STDIN_FILENO, &c, 1) < 0) {
+        return -1;
+    }
+
+    if (c == '\033') {
+        int r = escape_read();
+
+        if (r > 0) {
+            return r;
+        }
+    }
+
+    return c;
+}
+
+void update_prompt(void) {
+    struct passwd pwd;
+    char pwdbuf[512];
+    struct passwd *res;
+
+    if (uname(&_utsname) != 0) {
+        perror("uname()");
+        _utsname.nodename[0] = '?';
+        _utsname.nodename[1] = 0;
+    }
+
+    sh_uid = getuid();
+
+    if (getpwuid_r(sh_uid, &pwd, pwdbuf, sizeof(pwdbuf), &res) != 0) {
+        perror("getpwuid()");
+        sh_user[0] = 0;
+    } else {
+        strcpy(sh_user, res->pw_name);
+    }
+}
+
 int main(int argc, char **argv) {
     if (getpid() != 1) {
         printf("Won't work if PID is not 1\n");
@@ -849,13 +962,14 @@ int main(int argc, char **argv) {
     signal(SIGUSR1, sigusr1_handler);
 
     char linebuf[512];
-    char c;
+    int c;
     size_t l = 0;
     int res;
 
     //setuid(1000);
     //setgid(1000);
 
+    update_prompt();
     prompt();
 
 #if 0
@@ -871,11 +985,18 @@ int main(int argc, char **argv) {
 #endif
 
     while (1) {
-        if (read(STDIN_FILENO, &c, 1) < 0) {
-            printf("Read failed\n");
+        if ((c = getch()) < 0) {
             break;
         }
 
+        if (c == '\033') {
+            for (int i = 0; i < l; ++i) {
+                printf("\033[D \033[D");
+            }
+            linebuf[0] = 0;
+            l = 0;
+            continue;
+        }
         if (c == '\b') {
             if (l) {
                 linebuf[--l] = 0;
@@ -899,8 +1020,10 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        linebuf[l++] = c;
-        write(STDOUT_FILENO, &c, 1);
+        if (c >= ' ' && c < 255) {
+            linebuf[l++] = c;
+            write(STDOUT_FILENO, &c, 1);
+        }
     }
 
     return -1;

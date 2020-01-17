@@ -4,9 +4,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <time.h>
 
 #define LS_COLOR        (1 << 0)
 #define LS_DETAIL       (1 << 1)
+#define LS_TIME         (1 << 2)
 
 #define COLOR_DIR       "\033[36m"
 #define COLOR_DEV       "\033[33m"
@@ -18,6 +20,7 @@ static int ls_dir(const char *path, int flags) {
     DIR *dir;
     struct dirent *ent;
     struct stat ent_stat;
+    int stat_res;
     char ent_path[512];
     char t;
 
@@ -28,10 +31,14 @@ static int ls_dir(const char *path, int flags) {
 
     while ((ent = readdir(dir))) {
         if (ent->d_name[0] != '.') {
-            if (flags & LS_DETAIL) {
+            if (flags & (LS_DETAIL | LS_TIME)) {
                 snprintf(ent_path, sizeof(ent_path), "%s/%s",
                     strcmp(path, "") ? path : ".", ent->d_name);
-                if (stat(ent_path, &ent_stat) != 0) {
+                stat_res = stat(ent_path, &ent_stat);
+            }
+
+            if (flags & LS_DETAIL) {
+                if (stat_res != 0) {
                     printf("??????????    ?    ?        ? ");
                 } else {
                     switch (ent_stat.st_mode & S_IFMT) {
@@ -71,6 +78,30 @@ static int ls_dir(const char *path, int flags) {
                         ent_stat.st_gid,
                         ent_stat.st_uid,
                         ent_stat.st_size);
+                }
+            }
+
+            if (flags & LS_TIME) {
+                if (stat_res != 0) {
+                    printf("??? ?? ???? ????? ");
+                } else {
+                    static const char *const mon_names[12] = {
+                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                    };
+                    time_t t = ent_stat.st_ctime > ent_stat.st_mtime ?
+                        ent_stat.st_ctime : ent_stat.st_mtime;
+                    struct tm tm;
+                    if (gmtime_r(&t, &tm) == NULL) {
+                        printf("??? ?? ???? ????? ");
+                    } else {
+                        printf("%s %2u %04u %02u:%02u ",
+                            mon_names[(tm.tm_mon - 1) % 12],
+                            tm.tm_mday,
+                            tm.tm_year,
+                            tm.tm_hour,
+                            tm.tm_min);
+                    }
                 }
             }
 
@@ -117,6 +148,8 @@ int main(int argc, char **argv) {
                 flags |= LS_COLOR;
             } else if (!strcmp(argv[i], "-d")) {
                 flags |= LS_DETAIL;
+            } else if (!strcmp(argv[i], "-t")) {
+                flags |= LS_TIME;
             } else {
                 printf("Unknown option: %s\n", argv[i]);
             }
