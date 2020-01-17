@@ -5,7 +5,8 @@ KERNEL_HDRS?=kernel-hdr
 CC=x86_64-elf-yggdrasil-gcc
 
 DIRS=$(O) \
-	 $(STAGE)
+	 $(STAGE) \
+	 $(O)/sh
 HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/hexd \
@@ -14,7 +15,15 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/date \
 		  $(STAGE)/bin/uname \
 		  $(STAGE)/bin/mount \
-		  $(STAGE)/bin/umount
+		  $(STAGE)/bin/umount \
+		  $(STAGE)/bin/sh \
+		  $(STAGE)/bin/rm \
+		  $(STAGE)/bin/mkdir \
+		  $(STAGE)/bin/login
+sh_OBJS=$(O)/sh/sh.o \
+		$(O)/sh/readline.o \
+		$(O)/sh/builtin.o \
+		$(O)/sh/cmd.o
 
 usr_CFLAGS=-msse \
 	   	   -msse2 \
@@ -49,3 +58,9 @@ $(STAGE)/init: init.c
 
 $(STAGE)/bin/%: core/bin/%.c
 	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) $<
+
+$(STAGE)/bin/sh: $(sh_OBJS)
+	$(CC) -o $@ $(usr_LDFLAGS) $(sh_OBJS)
+
+$(O)/sh/%.o: sh/%.c $(shell find sh -name "*.h")
+	$(CC) -c -o $@ $(usr_CFLAGS) $<
