@@ -1,4 +1,5 @@
 #include <sys/fcntl.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
@@ -47,11 +48,15 @@ int main(int argc, char **argv) {
     }
 
     path = argv[1];
-    printf("open file %s\n", path);
 
-    if ((fd = open(path, O_RDONLY, 0)) < 0) {
-        perror(path);
-        return -1;
+    if (!strcmp(path, "-")) {
+        fd = STDIN_FILENO;
+        printf("Reading from stdin\n");
+    } else {
+        if ((fd = open(path, O_RDONLY, 0)) < 0) {
+            perror(path);
+            return -1;
+        }
     }
 
     offset = 0;

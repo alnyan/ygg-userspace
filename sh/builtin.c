@@ -38,6 +38,42 @@ DEF_BUILTIN(clear) {
     return 0;
 }
 
+DEF_BUILTIN(echo) {
+    for (int i = 1; i < cmd->argc; ++i) {
+        printf("%s ", cmd->args[i]);
+    }
+    printf("\n");
+    return 0;
+}
+
+DEF_BUILTIN(into) {
+    if (cmd->argc < 3) {
+        printf("usage: into <filename> <command> ...\n");
+        return -1;
+    }
+
+    int pid = fork();
+    if (pid < 0) {
+        perror("fork()");
+        return -1;
+    }
+
+    if (pid == 0) {
+        close(STDIN_FILENO);
+        int fd = open(cmd->args[1], O_RDONLY, 0);
+        if (fd < 0) {
+            perror(cmd->args[1]);
+            return -1;
+        }
+
+        exit(execve(cmd->args[2], (const char *const *) &cmd->args[2], NULL));
+    } else {
+        int st;
+        waitpid(pid, &st);
+        return 0;
+    }
+}
+
 // TODO: support usernames (getpwnam_r)
 DEF_BUILTIN(setid) {
     if (cmd->argc == 2) {
@@ -78,8 +114,10 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(builtins),
     DECL_BUILTIN(cd),
     DECL_BUILTIN(clear),
+    DECL_BUILTIN(echo),
     DECL_BUILTIN(exit),
     DECL_BUILTIN(setid),
+    DECL_BUILTIN(into),
     {NULL}
 };
 

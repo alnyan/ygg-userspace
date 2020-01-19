@@ -73,8 +73,37 @@ static void display_prompt(void) {
 }
 
 int main(int argc, char **argv) {
+    int fd = STDIN_FILENO;
     char linebuf[256];
     int res;
+
+    if (argc == 2) {
+        fd = open(argv[1], O_RDONLY, 0);
+
+        if (fd < 0) {
+            perror(argv[1]);
+            return -1;
+        }
+    } else if (argc != 1) {
+        printf("usage: sh [filename]\n");
+        return -1;
+    }
+
+    if (!isatty(fd)) {
+        while (1) {
+            if (gets_safe(fd, linebuf, sizeof(linebuf)) < 0) {
+                break;
+            }
+
+            eval(linebuf);
+        }
+
+        if (fd != STDIN_FILENO) {
+            close(fd);
+        }
+
+        return 0;
+    }
 
     while (1) {
         update_prompt();

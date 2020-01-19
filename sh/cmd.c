@@ -104,9 +104,14 @@ static int cmd_exec(const struct cmd_exec *cmd) {
 
 int eval(char *str) {
     struct cmd_exec cmd;
+    char *p;
 
     while (isspace(*str)) {
         ++str;
+    }
+
+    if ((p = strchr(str, '#'))) {
+        *p = 0;
     }
 
     if (!*str) {
