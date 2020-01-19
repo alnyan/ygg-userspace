@@ -6,7 +6,8 @@ CC=x86_64-elf-yggdrasil-gcc
 
 DIRS=$(O) \
 	 $(STAGE) \
-	 $(O)/sh
+	 $(O)/sh \
+	 $(O)/ase
 HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/hexd \
@@ -19,11 +20,13 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/sh \
 		  $(STAGE)/bin/rm \
 		  $(STAGE)/bin/mkdir \
-		  $(STAGE)/bin/login
+		  $(STAGE)/bin/login \
+		  $(STAGE)/bin/ase
 sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/readline.o \
 		$(O)/sh/builtin.o \
 		$(O)/sh/cmd.o
+ase_OBJS=$(O)/ase/ase.o
 
 usr_CFLAGS=-msse \
 	   	   -msse2 \
@@ -62,5 +65,11 @@ $(STAGE)/bin/%: core/bin/%.c
 $(STAGE)/bin/sh: $(sh_OBJS)
 	$(CC) -o $@ $(usr_LDFLAGS) $(sh_OBJS)
 
+$(STAGE)/bin/ase: $(ase_OBJS)
+	$(CC) -o $@ $(usr_LDFLAGS) $(ase_OBJS)
+
 $(O)/sh/%.o: sh/%.c $(shell find sh -name "*.h")
+	$(CC) -c -o $@ $(usr_CFLAGS) $<
+
+$(O)/ase/%.o: ase/%.c $(shell find ase -name "*.h")
 	$(CC) -c -o $@ $(usr_CFLAGS) $<

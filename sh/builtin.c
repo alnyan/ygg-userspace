@@ -33,6 +33,30 @@ DEF_BUILTIN(cd) {
     return chdir(cmd->args[1]);
 }
 
+DEF_BUILTIN(cat) {
+    if (cmd->argc < 2) {
+        printf("usage: cat <filename> ...\n");
+        return -1;
+    }
+    char buf[512];
+    ssize_t bread;
+
+    for (int i = 1; i < cmd->argc; ++i) {
+        int fd = open(cmd->args[i], O_RDONLY, 0);
+        if (fd < 0) {
+            perror(cmd->args[i]);
+            continue;
+        }
+
+        while ((bread = read(fd, buf, sizeof(buf))) > 0) {
+            write(STDOUT_FILENO, buf, bread);
+        }
+
+        close(fd);
+    }
+    return 0;
+}
+
 DEF_BUILTIN(clear) {
     puts2("\033[2J\033[1;1f");
     return 0;
@@ -112,12 +136,13 @@ DEF_BUILTIN(builtins) {
 
 static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(builtins),
+    DECL_BUILTIN(cat),
     DECL_BUILTIN(cd),
     DECL_BUILTIN(clear),
     DECL_BUILTIN(echo),
     DECL_BUILTIN(exit),
-    DECL_BUILTIN(setid),
     DECL_BUILTIN(into),
+    DECL_BUILTIN(setid),
     {NULL}
 };
 
