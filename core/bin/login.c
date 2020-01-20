@@ -1,4 +1,6 @@
+#include <sys/ioctl.h>
 #include <string.h>
+#include <termios.h>
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
@@ -97,11 +99,18 @@ static int loginuid(uid_t uid, gid_t gid, const char *sh) {
             exit(-1);
         }
 
+        setpgid(0, 0);
+        int pid = getpid();
+        ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
+
         const char *argp[] = { sh, NULL };
         exit(execve(sh, argp, NULL));
     } else {
         int st;
         waitpid(sh_pid, &st);
+        // Regain control of the terminal
+        int pgid = getpgid(0);
+        ioctl(STDIN_FILENO, TIOCSPGRP, &pgid);
         return 0;
     }
 }

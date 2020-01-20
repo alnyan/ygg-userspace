@@ -63,7 +63,7 @@ static int escape_read(void) {
 static int getch(void) {
     char c;
 
-    if (read(STDIN_FILENO, &c, 1) < 0) {
+    if (read(STDIN_FILENO, &c, 1) != 1) {
         return -1;
     }
 

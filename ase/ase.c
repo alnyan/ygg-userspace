@@ -1,4 +1,6 @@
+#include <sys/termios.h>
 #include <sys/select.h>
+#include <sys/ioctl.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -17,6 +19,9 @@
 #define MODE_NORMAL     0
 #define MODE_COMMAND    1
 #define MODE_INSERT     2
+
+static int term_width = 0;
+static int term_height = 0;
 
 struct ase_line {
     char text_data[256];
@@ -216,8 +221,6 @@ static int getch(void) {
     return c;
 }
 
-#define term_width  80
-#define term_height 25
 static void ase_buffer_draw(struct ase_buffer *buf) {
     for (size_t i = buf->scroll; i < buf->line_count && (i - buf->scroll < term_height - 1); ++i) {
         printf("\033[%u;%uf", i - buf->scroll + 1, 1);
@@ -420,6 +423,16 @@ static void cmd_exec(struct ase_buffer *buf) {
 int main(int argc, char **argv) {
     // Main buffer
     struct ase_buffer buf;
+    struct winsize ws;
+
+    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) != 0) {
+        perror("Failed to get window size");
+        printf("This program should be run in terminal\n");
+        return -1;
+    }
+
+    term_width = ws.ws_col;
+    term_height = ws.ws_row;
 
     buf.mode = MODE_NORMAL;
     buf.cmd_len = 0;
@@ -430,13 +443,13 @@ int main(int argc, char **argv) {
                 return -1;
             }
         } else {
-            if (ase_buffer_init(&buf, 25) != 0) {
+            if (ase_buffer_init(&buf, term_height) != 0) {
                 return -1;
             }
             strcpy(buf.filename, argv[1]);
         }
     } else if (argc == 1) {
-        if (ase_buffer_init(&buf, 25) != 0) {
+        if (ase_buffer_init(&buf, term_height) != 0) {
             return -1;
         }
     } else {

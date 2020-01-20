@@ -74,7 +74,6 @@ static void display_prompt(void) {
 }
 
 static void signal_handle(int signum) {
-    printf("\n^C\n");
 }
 
 int main(int argc, char **argv) {
