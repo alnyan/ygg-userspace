@@ -1,3 +1,5 @@
+#include <sys/termios.h>
+#include <sys/ioctl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -57,11 +59,19 @@ static int cmd_spawn(const char *path, const struct cmd_exec *cmd, int *cmd_res)
     }
 
     if (pid == 0) {
+        pid = getpid();
+        ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
+        setpgid(0, 0);
         exit(execve(path, (const char *const *) cmd->args, NULL));
     } else {
         if (waitpid(pid, cmd_res) != 0) {
             perror("waitpid()");
         }
+
+        // Regain control of foreground group
+        pid = getpgid(0);
+        ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
+
         return 0;
     }
 }

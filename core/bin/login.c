@@ -1,4 +1,5 @@
 #include <string.h>
+#include <signal.h>
 #include <stdio.h>
 #include <errno.h>
 #include <pwd.h>
@@ -7,6 +8,9 @@ struct spwd {
     char *sp_namp;
     char *sp_pwdp;
 };
+
+static int attempt = 0;
+static char line_buf[64];
 
 static ssize_t getline(char *buf, size_t lim, char pwchr) {
     size_t c = 0;
@@ -124,6 +128,10 @@ static int loginas(const char *name) {
     return loginuid(res->pw_uid, res->pw_gid, shell);
 }
 
+static void signal_handler(int signum) {
+    // TODO: syscalls interruptible by singals
+}
+
 int main(int argc, char **argv) {
     // Arguments are ignored
     if (getuid() != 0) {
@@ -131,8 +139,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    int attempt = 0;
-    char line_buf[64];
+    signal(SIGINT, signal_handler);
+
     char spnam_buf[128];
     struct spwd sp;
 
@@ -162,10 +170,14 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        printf("password: ");
-        if (getline(line_buf, sizeof(line_buf), '*') < 0) {
-            ++attempt;
-            continue;
+        if (sp.sp_pwdp[0] != 0) {
+            printf("password: ");
+            if (getline(line_buf, sizeof(line_buf), '*') < 0) {
+                ++attempt;
+                continue;
+            }
+        } else {
+            line_buf[0] = 0;
         }
 
         // No hashing yet, so just compare passwords
@@ -175,6 +187,7 @@ int main(int argc, char **argv) {
             attempt = 3;
             continue;
         } else {
+            printf("Login failed\n");
             ++attempt;
         }
     }

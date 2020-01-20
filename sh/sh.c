@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <string.h>
 #include <stdio.h>
 #include <pwd.h>
@@ -72,10 +73,16 @@ static void display_prompt(void) {
     }
 }
 
+static void signal_handle(int signum) {
+    printf("\n^C\n");
+}
+
 int main(int argc, char **argv) {
     int fd = STDIN_FILENO;
     char linebuf[256];
     int res;
+
+    signal(SIGINT, signal_handle);
 
     if (argc == 2) {
         fd = open(argv[1], O_RDONLY, 0);

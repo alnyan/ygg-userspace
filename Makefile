@@ -21,7 +21,8 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/rm \
 		  $(STAGE)/bin/mkdir \
 		  $(STAGE)/bin/login \
-		  $(STAGE)/bin/ase
+		  $(STAGE)/bin/ase \
+		  $(STAGE)/bin/su
 sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/readline.o \
 		$(O)/sh/builtin.o \
@@ -45,6 +46,7 @@ clean:
 	rm -rf $(O)
 
 $(O)/initrd.img: mkstage-etc $(STAGE_BIN)
+	chmod 04711 $(STAGE)/bin/su
 	cd $(STAGE) && tar czf $(abspath $@) *
 
 mkdirs:

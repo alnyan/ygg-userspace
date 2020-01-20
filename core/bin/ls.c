@@ -66,7 +66,7 @@ static int ls_dir(const char *path, int flags) {
                         t,
                         (ent_stat.st_mode & S_IRUSR) ? 'r' : '-',
                         (ent_stat.st_mode & S_IWUSR) ? 'w' : '-',
-                        (ent_stat.st_mode & S_IXUSR) ? 'x' : '-',
+                        (ent_stat.st_mode & S_ISUID ? 's' : (ent_stat.st_mode & S_IXUSR) ? 'x' : '-'),
                         (ent_stat.st_mode & S_IRGRP) ? 'r' : '-',
                         (ent_stat.st_mode & S_IWGRP) ? 'w' : '-',
                         (ent_stat.st_mode & S_IXGRP) ? 'x' : '-',
