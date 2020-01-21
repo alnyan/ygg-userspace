@@ -74,6 +74,16 @@ static void display_prompt(void) {
 }
 
 static void signal_handle(int signum) {
+    switch (signum) {
+    case SIGINT:
+        printf("\n");
+        update_prompt();
+        display_prompt();
+        break;
+    default:
+        printf("\nUnhandled signal: %d\n", signum);
+        break;
+    }
 }
 
 int main(int argc, char **argv) {

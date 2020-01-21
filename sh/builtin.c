@@ -143,7 +143,6 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(exit),
     DECL_BUILTIN(into),
     DECL_BUILTIN(setid),
-    {NULL}
 };
 
 

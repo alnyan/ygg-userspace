@@ -1,4 +1,5 @@
 #include <sys/ioctl.h>
+#include <assert.h>
 #include <string.h>
 #include <termios.h>
 #include <signal.h>
@@ -14,42 +15,46 @@ struct spwd {
 static int attempt = 0;
 static char line_buf[64];
 
-static ssize_t getline(char *buf, size_t lim, char pwchr) {
-    size_t c = 0;
-    char chr;
+static ssize_t getline(char *buf, size_t lim, int echo) {
+    ssize_t len;
+    struct termios old_tc;
+    struct termios tc;
 
-    while (1) {
-        if (c == lim) {
+    if (!echo) {
+        // Disable echo
+        if (tcgetattr(STDIN_FILENO, &old_tc)) {
+            perror("tcgetattr()");
             return -1;
         }
-
-        if (read(STDIN_FILENO, &chr, 1) != 1) {
+        memcpy(&tc, &old_tc, sizeof(struct termios));
+        // This won't show typed characters, but newlines will still be visible
+        tc.c_lflag &= ~ECHO;
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &tc)) {
+            perror("tcsetattr()");
             return -1;
-        }
-
-        switch (chr) {
-        case '\n':
-            putchar('\n');
-            buf[c] = 0;
-            return c;
-        case '\b':
-            if (c) {
-                buf[--c] = 0;
-                puts2("\033[D \033[D");
-            }
-            break;
-        default:
-            if (chr >= ' ' && chr < 255) {
-                if (pwchr) {
-                    putchar(pwchr);
-                } else {
-                    putchar(chr);
-                }
-                buf[c++] = chr;
-            }
-            break;
         }
     }
+
+    len = read(STDIN_FILENO, buf, lim);
+
+    if (!echo) {
+        // Restore terminal to sane state
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &old_tc)) {
+            perror("tcsetattr()");
+            return -1;
+        }
+    }
+
+    if (len <= 0) {
+        return -1;
+    }
+
+    // Remove trailing newline
+    if (buf[len - 1] == '\n') {
+        buf[len - 1] = 0;
+    }
+
+    return len;
 }
 
 static int getspnam_r(const char *name, struct spwd *sp, char *buf, size_t buf_size) {
@@ -169,7 +174,7 @@ int main(int argc, char **argv) {
         }
 
         printf("login: ");
-        if (getline(line_buf, sizeof(line_buf), 0) < 0) {
+        if (getline(line_buf, sizeof(line_buf), 1) < 0) {
             break;
         }
 
@@ -181,7 +186,7 @@ int main(int argc, char **argv) {
 
         if (sp.sp_pwdp[0] != 0) {
             printf("password: ");
-            if (getline(line_buf, sizeof(line_buf), '*') < 0) {
+            if (getline(line_buf, sizeof(line_buf), 0) < 0) {
                 ++attempt;
                 continue;
             }
