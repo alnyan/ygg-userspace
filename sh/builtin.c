@@ -143,11 +143,14 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(exit),
     DECL_BUILTIN(into),
     DECL_BUILTIN(setid),
+    {NULL}
 };
-
 
 int builtin_exec(const struct cmd_exec *cmd, int *cmd_res) {
     for (size_t i = 0; i < sizeof(__builtins) / sizeof(__builtins[0]); ++i) {
+        if (!__builtins[i].name) {
+            return -1;
+        }
         if (!strcmp(__builtins[i].name, cmd->args[0])) {
             *cmd_res = __builtins[i].exec(cmd);
             return 0;
