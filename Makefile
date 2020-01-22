@@ -22,7 +22,8 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/mkdir \
 		  $(STAGE)/bin/login \
 		  $(STAGE)/bin/ase \
-		  $(STAGE)/bin/su
+		  $(STAGE)/bin/su \
+		  $(STAGE)/bin/com
 sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/readline.o \
 		$(O)/sh/builtin.o \
