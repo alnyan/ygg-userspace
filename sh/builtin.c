@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "builtin.h"
+#include "config.h"
 #include "cmd.h"
 
 #define DEF_BUILTIN(b_name) \
@@ -38,7 +39,7 @@ DEF_BUILTIN(cat) {
         printf("usage: cat <filename> ...\n");
         return -1;
     }
-    char buf[512];
+    char buf[4096];
     ssize_t bread;
 
     for (int i = 1; i < cmd->argc; ++i) {
@@ -52,9 +53,40 @@ DEF_BUILTIN(cat) {
             write(STDOUT_FILENO, buf, bread);
         }
 
+        if (bread < 0) {
+            perror(cmd->args[i]);
+        }
+
         close(fd);
     }
     return 0;
+}
+
+DEF_BUILTIN(exec) {
+    //struct cmd_exec new_cmd;
+    if (cmd->argc < 2) {
+        printf("usage: exec <command> ...\n");
+    }
+
+    char path_path[256];
+    int res;
+
+    if (cmd->args[1][0] == '.' || cmd->args[1][0] == '/') {
+        if ((res = access(cmd->args[1], X_OK)) != 0) {
+            perror(cmd->args[1]);
+            return res;
+        }
+
+        strcpy(path_path, cmd->args[1]);
+        exit(execve(path_path, (const char **) &cmd->args[1], NULL));
+    }
+
+    snprintf(path_path, sizeof(path_path), "%s/%s", PATH, cmd->args[1]);
+    if ((res = access(path_path, X_OK)) == 0) {
+        exit(execve(path_path, (const char **) &cmd->args[1], NULL));
+    }
+
+    return -1;
 }
 
 DEF_BUILTIN(clear) {
@@ -140,6 +172,7 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(cd),
     DECL_BUILTIN(clear),
     DECL_BUILTIN(echo),
+    DECL_BUILTIN(exec),
     DECL_BUILTIN(exit),
     DECL_BUILTIN(into),
     DECL_BUILTIN(setid),

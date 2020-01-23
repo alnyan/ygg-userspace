@@ -3,7 +3,7 @@
 
 // The only thing init does now
 static int start_login(void) {
-    const char *login = "/bin/login";
+    const char *login = "/etc/init.rc";
     const char *const argp[] = {
         login, NULL
     };
