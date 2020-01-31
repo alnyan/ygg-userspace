@@ -62,6 +62,57 @@ DEF_BUILTIN(cat) {
     return 0;
 }
 
+DEF_BUILTIN(chmod) {
+    mode_t mode = 0;
+    const char *p;
+    if (cmd->argc != 3) {
+        printf("usage: chmod <mode> <filename>\n");
+        return -1;
+    }
+    p = cmd->args[1];
+    while (*p) {
+        if (*p > '7' || *p < '0') {
+            printf("Invalid mode: %s\n", cmd->args[1]);
+            return -1;
+        }
+        mode <<= 3;
+        mode |= *p - '0';
+        ++p;
+    }
+
+    if (chmod(cmd->args[2], mode)) {
+        perror(cmd->args[2]);
+        return -1;
+    }
+
+    return 0;
+}
+
+DEF_BUILTIN(chown) {
+    uid_t uid;
+    gid_t gid;
+    const char *p;
+
+    if (cmd->argc != 3) {
+        printf("usage: chown <uid>:<gid> <filename>\n");
+        return -1;
+    }
+
+    if (!(p = strchr(cmd->args[1], ':'))) {
+        printf("Invalid UID:GID pair: %s\n", cmd->args[1]);
+        return -1;
+    }
+    uid = atoi(cmd->args[1]);
+    gid = atoi(p + 1);
+
+    if (chown(cmd->args[2], uid, gid)) {
+        perror(cmd->args[2]);
+        return -1;
+    }
+
+    return 0;
+}
+
 DEF_BUILTIN(exec) {
     //struct cmd_exec new_cmd;
     if (cmd->argc < 2) {
@@ -170,6 +221,8 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(builtins),
     DECL_BUILTIN(cat),
     DECL_BUILTIN(cd),
+    DECL_BUILTIN(chmod),
+    DECL_BUILTIN(chown),
     DECL_BUILTIN(clear),
     DECL_BUILTIN(echo),
     DECL_BUILTIN(exec),

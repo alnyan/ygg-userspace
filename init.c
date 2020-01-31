@@ -16,5 +16,10 @@ int main(int argc, char **argv) {
         printf("Won't work if PID is not 1\n");
         return -1;
     }
+
+    mount(NULL, "/dev", "devfs", 0, NULL);
+    mount(NULL, "/sys", "sysfs", 0, NULL);
+    mount("/dev/sda1", "/mnt", NULL, 0, NULL);
+
     return start_login();
 }
