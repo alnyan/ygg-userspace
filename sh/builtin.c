@@ -1,3 +1,5 @@
+#include <sys/fcntl.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -88,6 +90,56 @@ DEF_BUILTIN(chmod) {
     return 0;
 }
 
+DEF_BUILTIN(stat) {
+    struct stat st;
+    if (cmd->argc != 2) {
+        printf("usage: stat <filename>\n");
+        return -1;
+    }
+
+    if (stat(cmd->args[1], &st) != 0) {
+        return -1;
+    }
+
+    printf("device  %u\n", st.st_dev);
+    printf("inode   %u\n", st.st_ino);
+    printf("mode    %u\n", st.st_mode);
+    printf("nlink   %u\n", st.st_nlink);
+    printf("uid     %u\n", st.st_uid);
+    printf("gid     %u\n", st.st_gid);
+    printf("rdev    %u\n", st.st_rdev);
+    printf("size    %u\n", st.st_size);
+    printf("atime   %u\n", st.st_atime);
+    printf("mtime   %u\n", st.st_mtime);
+    printf("ctime   %u\n", st.st_ctime);
+    printf("blksize %u\n", st.st_blksize);
+    printf("blocks  %u\n", st.st_blocks);
+
+    return 0;
+}
+
+DEF_BUILTIN(sync) {
+    sync();
+    return 0;
+}
+
+DEF_BUILTIN(touch) {
+    int fd;
+    if (cmd->argc != 2) {
+        printf("usage: touch <filename>\n");
+        return -1;
+    }
+
+    if ((fd = open(cmd->args[1], O_WRONLY | O_CREAT, 0755)) < 0) {
+        perror(cmd->args[1]);
+        return -1;
+    }
+
+    close(fd);
+
+    return 0;
+}
+
 DEF_BUILTIN(chown) {
     uid_t uid;
     gid_t gid;
@@ -129,12 +181,12 @@ DEF_BUILTIN(exec) {
         }
 
         strcpy(path_path, cmd->args[1]);
-        exit(execve(path_path, (const char **) &cmd->args[1], NULL));
+        exit(execve(path_path, (char *const *) &cmd->args[1], NULL));
     }
 
     snprintf(path_path, sizeof(path_path), "%s/%s", PATH, cmd->args[1]);
     if ((res = access(path_path, X_OK)) == 0) {
-        exit(execve(path_path, (const char **) &cmd->args[1], NULL));
+        exit(execve(path_path, (char *const *) &cmd->args[1], NULL));
     }
 
     return -1;
@@ -151,34 +203,6 @@ DEF_BUILTIN(echo) {
     }
     printf("\n");
     return 0;
-}
-
-DEF_BUILTIN(into) {
-    if (cmd->argc < 3) {
-        printf("usage: into <filename> <command> ...\n");
-        return -1;
-    }
-
-    int pid = fork();
-    if (pid < 0) {
-        perror("fork()");
-        return -1;
-    }
-
-    if (pid == 0) {
-        close(STDIN_FILENO);
-        int fd = open(cmd->args[1], O_RDONLY, 0);
-        if (fd < 0) {
-            perror(cmd->args[1]);
-            return -1;
-        }
-
-        exit(execve(cmd->args[2], (const char *const *) &cmd->args[2], NULL));
-    } else {
-        int st;
-        waitpid(pid, &st);
-        return 0;
-    }
 }
 
 // TODO: support usernames (getpwnam_r)
@@ -227,8 +251,10 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(echo),
     DECL_BUILTIN(exec),
     DECL_BUILTIN(exit),
-    DECL_BUILTIN(into),
     DECL_BUILTIN(setid),
+    DECL_BUILTIN(stat),
+    DECL_BUILTIN(sync),
+    DECL_BUILTIN(touch),
     {NULL}
 };
 

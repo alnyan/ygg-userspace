@@ -1,3 +1,6 @@
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <string.h>
 #include <stdio.h>
 
 static void usage(void) {
@@ -6,6 +9,7 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     int res;
+    uint32_t mount_flags = 0;
     struct stat st;
     const char *type = NULL;
     const char *src = NULL;
@@ -24,7 +28,24 @@ int main(int argc, char **argv) {
                 type = argv[i + 1];
                 ++i;
                 break;
+            case 'o':
+                if (i == argc - 1) {
+                    usage();
+                    return -1;
+                }
+                ++i;
+                if (!strcmp(argv[i], "sync")) {
+                    mount_flags |= MS_SYNCHRONOUS;
+                } else if (!strcmp(argv[i], "ro")) {
+                    mount_flags |= MS_RDONLY;
+                } else {
+                    printf("Unknown option: -o %s\n", argv[i]);
+                    usage();
+                    return -1;
+                }
+                break;
             default:
+                usage();
                 return -1;
             }
 
@@ -81,7 +102,7 @@ int main(int argc, char **argv) {
     }
 
     // Do the magic stuff
-    if ((res = mount(src, dst, type, 0, NULL)) != 0) {
+    if ((res = mount(src, dst, type, mount_flags, NULL)) != 0) {
         perror("mount()");
         return -1;
     }

@@ -1,4 +1,8 @@
+#include <sys/fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include <termios.h>
@@ -109,7 +113,7 @@ static int loginuid(uid_t uid, gid_t gid, const char *sh) {
         ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
 
         const char *argp[] = { sh, NULL };
-        exit(execve(sh, argp, NULL));
+        exit(execve(sh, (char *const *) argp, NULL));
     } else {
         int st;
         waitpid(sh_pid, &st);

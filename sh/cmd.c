@@ -1,5 +1,6 @@
 #include <sys/termios.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -62,7 +63,7 @@ static int cmd_spawn(const char *path, const struct cmd_exec *cmd, int *cmd_res)
         pid = getpid();
         ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
         setpgid(0, 0);
-        exit(execve(path, (const char *const *) cmd->args, NULL));
+        exit(execve(path, (char *const *) cmd->args, NULL));
     } else {
         if (waitpid(pid, cmd_res) != 0) {
             perror("waitpid()");

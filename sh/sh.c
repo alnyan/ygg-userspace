@@ -1,3 +1,6 @@
+#include <sys/utsname.h>
+#include <sys/fcntl.h>
+#include <unistd.h>
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
@@ -100,7 +103,7 @@ int main(int argc, char **argv) {
             perror(argv[1]);
             return -1;
         }
-    } else if (argc != 1) {
+    } else if (argc > 2) {
         printf("usage: sh [filename]\n");
         return -1;
     }

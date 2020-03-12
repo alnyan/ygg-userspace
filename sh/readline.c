@@ -1,4 +1,4 @@
-#include <sys/select.h>
+//#include <sys/select.h>
 #include <stdio.h>
 
 //#define KEY_UP      (256)

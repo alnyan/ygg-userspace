@@ -11,29 +11,31 @@ DIRS=$(O) \
 HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/hexd \
-		  $(STAGE)/bin/ls \
-		  $(STAGE)/bin/reboot \
 		  $(STAGE)/bin/date \
 		  $(STAGE)/bin/uname \
 		  $(STAGE)/bin/mount \
 		  $(STAGE)/bin/umount \
-		  $(STAGE)/bin/sh \
-		  $(STAGE)/bin/rm \
-		  $(STAGE)/bin/mkdir \
 		  $(STAGE)/bin/login \
-		  $(STAGE)/bin/ase \
-		  $(STAGE)/bin/su \
-		  $(STAGE)/bin/com
+		  $(STAGE)/bin/sh \
+		  $(STAGE)/bin/ls \
+		  $(STAGE)/bin/rm \
+		  $(STAGE)/bin/reboot \
+		  $(STAGE)/bin/mkdir
+
+#		  $(STAGE)/bin/com \
+#		  $(STAGE)/bin/ase \
+#		  $(STAGE)/bin/su \
+
 sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/readline.o \
 		$(O)/sh/builtin.o \
 		$(O)/sh/cmd.o
 ase_OBJS=$(O)/ase/ase.o
 
-usr_CFLAGS=-msse \
-	   	   -msse2 \
-	   	   -ggdb \
-	   	   -O0 \
+usr_CFLAGS=-ggdb \
+		   -msse \
+		   -msse2 \
+	   	   -O2 \
 		   -Wall \
 		   -Werror \
 		   -ffreestanding
@@ -46,8 +48,9 @@ all: mkdirs $(O)/initrd.img
 clean:
 	rm -rf $(O)
 
+
+#chmod 04711 $(STAGE)/bin/su
 $(O)/initrd.img: mkstage-etc $(STAGE_BIN)
-	chmod 04711 $(STAGE)/bin/su
 	cd $(STAGE) && tar czf $(abspath $@) *
 
 mkdirs:
