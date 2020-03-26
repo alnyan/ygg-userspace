@@ -20,7 +20,10 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/ls \
 		  $(STAGE)/bin/rm \
 		  $(STAGE)/bin/reboot \
-		  $(STAGE)/bin/mkdir
+		  $(STAGE)/bin/mkdir \
+		  $(STAGE)/bin/netctl \
+		  $(STAGE)/bin/netmeow \
+		  $(STAGE)/bin/netdump
 
 #		  $(STAGE)/bin/com \
 #		  $(STAGE)/bin/ase \
