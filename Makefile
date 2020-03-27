@@ -7,7 +7,8 @@ CC=x86_64-elf-yggdrasil-gcc
 DIRS=$(O) \
 	 $(STAGE) \
 	 $(O)/sh \
-	 $(O)/ase
+	 $(O)/ase \
+	 $(O)/vsh
 HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/hexd \
@@ -24,7 +25,8 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/netctl \
 		  $(STAGE)/bin/netmeow \
 		  $(STAGE)/bin/netdump \
-		  $(STAGE)/bin/video
+		  $(STAGE)/bin/mouse \
+		  $(STAGE)/bin/vsh
 
 #		  $(STAGE)/bin/com \
 #		  $(STAGE)/bin/ase \
@@ -35,6 +37,11 @@ sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/builtin.o \
 		$(O)/sh/cmd.o
 ase_OBJS=$(O)/ase/ase.o
+vsh_OBJS=$(O)/vsh/vsh.o \
+		 $(O)/vsh/input.o \
+		 $(O)/vsh/video.o \
+		 $(O)/vsh/font.o \
+		 $(O)/vsh/logo.o
 
 usr_CFLAGS=-ggdb \
 		   -msse \
@@ -75,8 +82,16 @@ $(STAGE)/bin/%: core/bin/%.c
 $(STAGE)/bin/sh: $(sh_OBJS)
 	$(CC) -o $@ $(usr_LDFLAGS) $(sh_OBJS)
 
+$(STAGE)/bin/vsh: $(vsh_OBJS)
+	$(CC) -o $@ $(usr_LDFLAGS) $(vsh_OBJS)
+
 $(STAGE)/bin/ase: $(ase_OBJS)
 	$(CC) -o $@ $(usr_LDFLAGS) $(ase_OBJS)
+
+$(O)/vsh/%.o: vsh/%.c $(shell find vsh -name "*.h")
+	$(CC) -c -o $@ $(usr_CFLAGS) $<
+$(O)/vsh/%.o: vsh/%.S
+	$(CC) -c -o $@ $(usr_CFLAGS) $<
 
 $(O)/sh/%.o: sh/%.c $(shell find sh -name "*.h")
 	$(CC) -c -o $@ $(usr_CFLAGS) $<
