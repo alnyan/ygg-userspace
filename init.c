@@ -1,10 +1,16 @@
-#include <sys/netctl.h>
-#include <sys/mount.h>
+//#include <sys/netctl.h>
+// TODO:
+//#include <sys/mount.h>
 #include <sys/wait.h>
 #include <assert.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <time.h>
+
+// TODO
+int mount(const char *source, const char *target,
+          const char *fs, unsigned long flags,
+          void *data);
 
 // The only thing init does now
 static int start_login(void) {

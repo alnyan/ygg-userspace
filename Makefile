@@ -65,16 +65,10 @@ usr_CFLAGS=-ggdb \
 usr_LDFLAGS=-lgcc \
 			-static
 
-all: mkdirs lua $(O)/initrd.img
+all: mkdirs $(O)/initrd.img
 
 clean:
 	rm -rf $(O)
-	make -j5 -C ../lua clean
-
-lua:
-	make -C ../lua yggdrasil
-	mkdir -p $(STAGE)/bin
-	cp ../lua/lua $(STAGE)/bin/lua
 
 #chmod 04711 $(STAGE)/bin/su
 $(O)/initrd.img: mkstage-etc $(STAGE_BIN)

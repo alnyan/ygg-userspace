@@ -1,8 +1,14 @@
-#include <sys/mount.h>
+// TODO
+//#include <sys/mount.h>
+#include <ygg/mount.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+
+int mount(const char *source, const char *target,
+          const char *fs, unsigned long flags,
+          void *data);
 
 static void usage(void) {
     printf("Usage: mount [-t type] device target\n");

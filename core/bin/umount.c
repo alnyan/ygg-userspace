@@ -1,5 +1,8 @@
-#include <sys/mount.h>
+// TODO
+//#include <sys/mount.h>
 #include <stdio.h>
+
+int umount(const char *target);
 
 int main(int argc, char **argv) {
     int res;

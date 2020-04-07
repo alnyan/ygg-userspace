@@ -1,5 +1,6 @@
 #include <sys/termios.h>
-#include <sys/ioctl.h>
+// TODO
+//#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,6 +12,8 @@
 #include "builtin.h"
 #include "config.h"
 #include "cmd.h"
+
+int ioctl(int fd, unsigned long req, ...);
 
 static int make_cmd(char *input, struct cmd_exec *ex) {
     char *p = strchr(input, ' ');

@@ -1,5 +1,6 @@
 #include <sys/fcntl.h>
-#include <sys/ioctl.h>
+// TODO
+//#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
@@ -10,6 +11,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <pwd.h>
+
+int ioctl(int fd, unsigned long req, ...);
 
 #include <sys/gets2.h>
 
