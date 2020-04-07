@@ -1,4 +1,5 @@
 //#include <sys/select.h>
+#include <unistd.h>
 #include <stdio.h>
 
 //#define KEY_UP      (256)
@@ -90,6 +91,9 @@ int readline(char *buf, size_t lim) {
     if (buf[len - 1] == '\n') {
         buf[len - 1] = 0;
     }
+
+    //printf("Got len = %ld\n", len);
+    //while (1);
 
     //int len = 0;
     //int cur = 0;

@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "builtin.h"
 #include "config.h"
@@ -101,19 +102,19 @@ DEF_BUILTIN(stat) {
         return -1;
     }
 
-    printf("device  %u\n", st.st_dev);
-    printf("inode   %u\n", st.st_ino);
-    printf("mode    %u\n", st.st_mode);
-    printf("nlink   %u\n", st.st_nlink);
-    printf("uid     %u\n", st.st_uid);
-    printf("gid     %u\n", st.st_gid);
-    printf("rdev    %u\n", st.st_rdev);
-    printf("size    %u\n", st.st_size);
-    printf("atime   %u\n", st.st_atime);
-    printf("mtime   %u\n", st.st_mtime);
-    printf("ctime   %u\n", st.st_ctime);
-    printf("blksize %u\n", st.st_blksize);
-    printf("blocks  %u\n", st.st_blocks);
+    printf("device  %u\n",  st.st_dev);
+    printf("inode   %u\n",  st.st_ino);
+    printf("mode    %u\n",  st.st_mode);
+    printf("nlink   %u\n",  st.st_nlink);
+    printf("uid     %u\n",  st.st_uid);
+    printf("gid     %u\n",  st.st_gid);
+    printf("rdev    %u\n",  st.st_rdev);
+    printf("size    %u\n",  st.st_size);
+    printf("atime   %u\n",  st.st_atime);
+    printf("mtime   %u\n",  st.st_mtime);
+    printf("ctime   %u\n",  st.st_ctime);
+    printf("blksize %u\n",  st.st_blksize);
+    printf("blocks  %u\n",  st.st_blocks);
 
     return 0;
 }
@@ -193,7 +194,7 @@ DEF_BUILTIN(exec) {
 }
 
 DEF_BUILTIN(clear) {
-    puts2("\033[2J\033[1;1f");
+    printf("\033[2J\033[1;1f");
     return 0;
 }
 

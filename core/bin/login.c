@@ -5,11 +5,13 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
-#include <termios.h>
+#include <sys/termios.h>
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
 #include <pwd.h>
+
+#include <sys/gets2.h>
 
 struct spwd {
     char *sp_namp;
@@ -62,12 +64,13 @@ static ssize_t getline(char *buf, size_t lim, int echo) {
 }
 
 static int getspnam_r(const char *name, struct spwd *sp, char *buf, size_t buf_size) {
-    int fd = open("/etc/shadow", O_RDONLY, 0);
-    if (fd < 0) {
-        return fd;
+    int fp = open("/etc/shadow", O_RDONLY, 0);
+    if (fp < 0) {
+        return -1;
     }
 
-    while (gets_safe(fd, buf, buf_size) > 0) {
+    // TODO POSIX
+    while (gets_safe(fp, buf, buf_size)) {
         char *p0 = strchr(buf, ':');
         if (!p0) {
             break;
@@ -84,13 +87,13 @@ static int getspnam_r(const char *name, struct spwd *sp, char *buf, size_t buf_s
             continue;
         }
 
-        close(fd);
+        close(fp);
         sp->sp_namp = buf;
         sp->sp_pwdp = p0 + 1;
         return 0;
     }
 
-    close(fd);
+    close(fp);
     errno = ENOENT;
     return -1;
 }
@@ -105,7 +108,7 @@ static int loginuid(uid_t uid, gid_t gid, const char *sh) {
     if (sh_pid == 0) {
         if (setuid(uid) || setgid(gid)) {
             perror("login");
-            exit(-1);
+            _exit(-1);
         }
 
         setpgid(0, 0);
@@ -113,10 +116,10 @@ static int loginuid(uid_t uid, gid_t gid, const char *sh) {
         ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
 
         const char *argp[] = { sh, NULL };
-        exit(execve(sh, (char *const *) argp, NULL));
+        _exit(execve(sh, (char *const *) argp, NULL));
     } else {
         int st;
-        waitpid(sh_pid, &st);
+        waitpid(sh_pid, &st, 0);
         // Regain control of the terminal
         int pgid = getpgid(0);
         ioctl(STDIN_FILENO, TIOCSPGRP, &pgid);
@@ -173,11 +176,13 @@ int main(int argc, char **argv) {
 
     while (1) {
         if (attempt == 3) {
-            puts2("\033[2J\033[1;1f");
+            printf("\033[2J\033[1;1f");
+            fflush(stdout);
             attempt = 0;
         }
 
         printf("login: ");
+        fflush(stdout);
         if (getline(line_buf, sizeof(line_buf), 1) < 0) {
             break;
         }
@@ -190,6 +195,7 @@ int main(int argc, char **argv) {
 
         if (sp.sp_pwdp[0] != 0) {
             printf("password: ");
+            fflush(stdout);
             if (getline(line_buf, sizeof(line_buf), 0) < 0) {
                 ++attempt;
                 continue;

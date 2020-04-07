@@ -1,6 +1,5 @@
 #include <sys/netctl.h>
 #include <sys/mount.h>
-#include <sys/mman.h>
 #include <sys/wait.h>
 #include <assert.h>
 #include <unistd.h>
@@ -27,8 +26,8 @@ int main(int argc, char **argv) {
     mount(NULL, "/sys", "sysfs", 0, NULL);
     mount("/dev/sda1", "/mnt", NULL, 0, NULL);
 
-    uint32_t inaddr = 0x0A000001;
-    netctl("eth0", NETCTL_SET_INADDR, &inaddr);
+    //uint32_t inaddr = 0x0A000001;
+    //netctl("eth0", NETCTL_SET_INADDR, &inaddr);
 
     return start_login();
 }

@@ -11,25 +11,35 @@ DIRS=$(O) \
 	 $(O)/vsh
 HDRS=$(shell find $(S) -type f -name "*.h")
 STAGE_BIN=$(STAGE)/init \
+		  $(STAGE)/bin/ls \
+		  $(STAGE)/bin/sh \
 		  $(STAGE)/bin/hexd \
-		  $(STAGE)/bin/date \
 		  $(STAGE)/bin/uname \
+		  $(STAGE)/bin/rm \
+		  $(STAGE)/bin/mkdir \
 		  $(STAGE)/bin/mount \
 		  $(STAGE)/bin/umount \
-		  $(STAGE)/bin/login \
-		  $(STAGE)/bin/sh \
-		  $(STAGE)/bin/ls \
-		  $(STAGE)/bin/rm \
-		  $(STAGE)/bin/reboot \
-		  $(STAGE)/bin/mkdir \
-		  $(STAGE)/bin/netctl \
-		  $(STAGE)/bin/netmeow \
-		  $(STAGE)/bin/netdump \
-		  $(STAGE)/bin/mouse \
-		  $(STAGE)/bin/vsh
+		  $(STAGE)/bin/date \
+		  $(STAGE)/bin/login
+
+# TODO
+# newlib: gettimeofday is broken?
+
+# newlib: port mount()/umount()
+# newlib: port reboot()
+		 # $(STAGE)/bin/reboot \
+
+
+		 # $(STAGE)/bin/netctl \
+		 # $(STAGE)/bin/netmeow \
+		 # $(STAGE)/bin/netdump \
+		 # $(STAGE)/bin/ping \
+
+		 # $(STAGE)/bin/mouse \
+		 # $(STAGE)/bin/ase \
+		 # $(STAGE)/bin/vsh
 
 #		  $(STAGE)/bin/com \
-#		  $(STAGE)/bin/ase \
 #		  $(STAGE)/bin/su \
 
 sh_OBJS=$(O)/sh/sh.o \
@@ -46,19 +56,25 @@ vsh_OBJS=$(O)/vsh/vsh.o \
 usr_CFLAGS=-ggdb \
 		   -msse \
 		   -msse2 \
-	   	   -O2 \
+	   	   -O0 \
 		   -Wall \
 		   -Werror \
+		   -Wno-char-subscripts \
 		   -ffreestanding
 
 usr_LDFLAGS=-lgcc \
 			-static
 
-all: mkdirs $(O)/initrd.img
+all: mkdirs lua $(O)/initrd.img
 
 clean:
 	rm -rf $(O)
+	make -j5 -C ../lua clean
 
+lua:
+	make -C ../lua yggdrasil
+	mkdir -p $(STAGE)/bin
+	cp ../lua/lua $(STAGE)/bin/lua
 
 #chmod 04711 $(STAGE)/bin/su
 $(O)/initrd.img: mkstage-etc $(STAGE_BIN)
@@ -68,7 +84,7 @@ mkdirs:
 	mkdir -p $(DIRS)
 
 mkstage-etc:
-	mkdir -p $(STAGE)/dev $(STAGE)/mnt $(STAGE)/bin
+	mkdir -p $(STAGE)/dev $(STAGE)/mnt $(STAGE)/bin $(STAGE)/sys
 	cp -r etc $(STAGE)
 
 # Application building

@@ -1,5 +1,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/select.h>
 #include <stdio.h>
 
 #define LINE_LENGTH         16
@@ -54,6 +55,9 @@ int main(int argc, char **argv) {
     size_t salen;
     char buf[4096];
     int fd = socket(AF_PACKET, SOCK_RAW, 0);
+    fd_set fds;
+    struct timeval tv;
+    int res;
 
     if (fd < 0) {
         perror("socket()");
@@ -61,14 +65,29 @@ int main(int argc, char **argv) {
     }
 
     while (1) {
-        ssize_t len = recvfrom(fd, buf, sizeof(buf), &sa, &salen);
+        FD_ZERO(&fds);
+        FD_SET(fd, &fds);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
 
-        if (len < 0) {
-            perror("recvfrom()");
-            break;
+        res = select(fd + 1, &fds, NULL, NULL, &tv);
+
+        if (res < 0) {
+            perror("select()");
         }
 
-        packet_dump(buf, len);
+        if (res > 0) {
+            ssize_t len = recvfrom(fd, buf, sizeof(buf), &sa, &salen);
+
+            if (len < 0) {
+                perror("recvfrom()");
+                break;
+            }
+
+            packet_dump(buf, len);
+        } else {
+            printf("Timed out\n");
+        }
     }
 
     return 0;

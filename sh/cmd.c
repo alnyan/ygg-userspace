@@ -2,7 +2,9 @@
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -65,7 +67,7 @@ static int cmd_spawn(const char *path, const struct cmd_exec *cmd, int *cmd_res)
         setpgid(0, 0);
         exit(execve(path, (char *const *) cmd->args, NULL));
     } else {
-        if (waitpid(pid, cmd_res) != 0) {
+        if (waitpid(pid, cmd_res, 0) != 0) {
             perror("waitpid()");
         }
 

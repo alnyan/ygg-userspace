@@ -1,9 +1,11 @@
 #include <sys/termios.h>
 #include <sys/select.h>
+#include <termios.h>
 #include <sys/ioctl.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <stdio.h>
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -20,6 +22,7 @@
 #define MODE_COMMAND    1
 #define MODE_INSERT     2
 
+static struct termios tc, tc_old;
 static int term_width = 0;
 static int term_height = 0;
 
@@ -360,13 +363,13 @@ static void ase_line_insert(struct ase_buffer *buf, int br) {
 
         buf->c_col = 0;
     } else {
-        //for (ssize_t i = buf->line_count; i > buf->c_row; --i) {
-        //    buf->lines[i].length = buf->lines[i - 1].length;
-        //    memcpy(buf->lines[i].text_data, buf->lines[i - 1].text_data, buf->lines[i - 1].length);
-        //}
-        //buf->lines[buf->c_row].length = 0;
-        //buf->c_col = 0;
-        //++buf->line_count;
+        for (ssize_t i = buf->line_count; i > buf->c_row; --i) {
+            buf->lines[i].length = buf->lines[i - 1].length;
+            memcpy(buf->lines[i].text_data, buf->lines[i - 1].text_data, buf->lines[i - 1].length);
+        }
+        buf->lines[buf->c_row].length = 0;
+        buf->c_col = 0;
+        ++buf->line_count;
     }
 }
 
@@ -408,6 +411,7 @@ static void key_insert(struct ase_buffer *buf, int ch) {
 
 static void cmd_exec(struct ase_buffer *buf) {
     if (!strcmp(buf->cmd_buf, "q")) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &tc_old);
         printf("\033[2J\033[1;1f");
         exit(0);
     } else if (!strncmp(buf->cmd_buf, "e ", 2)) {
@@ -433,6 +437,18 @@ int main(int argc, char **argv) {
 
     term_width = ws.ws_col;
     term_height = ws.ws_row;
+
+    if (tcgetattr(STDIN_FILENO, &tc_old) != 0) {
+        perror("Failed to get terminal settings");
+        return -1;
+    }
+    memcpy(&tc, &tc_old, sizeof(struct termios));
+    tc.c_lflag = 0;
+    tc.c_iflag &= ~ICANON;
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &tc) != 0) {
+        perror("Failed to set terminal settings");
+        return -1;
+    }
 
     buf.mode = MODE_NORMAL;
     buf.cmd_len = 0;

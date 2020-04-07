@@ -9,9 +9,9 @@
 
 static int running = 1;
 
-static int mx = 40;
-static int my = 12;
-static double mx_d = 40, my_d = 12;
+//static int mx = 40;
+//static int my = 12;
+//static double mx_d = 40, my_d = 12;
 
 static int con_width, con_height;
 
@@ -19,47 +19,47 @@ static void signal_handle(int signum) {
     running = 0;
 }
 
-static void kb_handle(char *buf, size_t len) {
-    if (buf[0] == 'q') {
-        running = 0;
-    }
-}
-
-static void ms_handle(char *buf, size_t len) {
-    for (size_t i = 0; i < len / 5; ++i) {
-        char type = buf[i * 5 + 0];
-
-        switch (type) {
-        case 'd': {
-                int16_t dx = *(int16_t *) &buf[i * 5 + 1];
-                int16_t dy = *(int16_t *) &buf[i * 5 + 3];
-
-                mx_d += (double) dx / 4.0;
-                my_d -= (double) dy / 12.0;
-
-                if (mx_d < 0) {
-                    mx_d = 0;
-                }
-                if (mx_d >= con_width - 1) {
-                    mx_d = con_width - 2;
-                }
-
-                if (my_d < 0) {
-                    my_d = 0;
-                }
-                if (my_d >= con_height - 1) {
-                    my_d = con_height - 2;
-                }
-
-                mx = mx_d;
-                my = my_d;
-                puts2("\033[2J\033[1;1f");
-                printf("\033[%d;%dfX\033[%d;%df", my + 1, mx + 1, my + 1, mx + 1);
-            }
-            break;
-        }
-    }
-}
+//static void kb_handle(char *buf, size_t len) {
+//    if (buf[0] == 'q') {
+//        running = 0;
+//    }
+//}
+//
+//static void ms_handle(char *buf, size_t len) {
+//    for (size_t i = 0; i < len / 5; ++i) {
+//        char type = buf[i * 5 + 0];
+//
+//        switch (type) {
+//        case 'd': {
+//                int16_t dx = *(int16_t *) &buf[i * 5 + 1];
+//                int16_t dy = *(int16_t *) &buf[i * 5 + 3];
+//
+//                mx_d += (double) dx / 4.0;
+//                my_d -= (double) dy / 12.0;
+//
+//                if (mx_d < 0) {
+//                    mx_d = 0;
+//                }
+//                if (mx_d >= con_width - 1) {
+//                    mx_d = con_width - 2;
+//                }
+//
+//                if (my_d < 0) {
+//                    my_d = 0;
+//                }
+//                if (my_d >= con_height - 1) {
+//                    my_d = con_height - 2;
+//                }
+//
+//                mx = mx_d;
+//                my = my_d;
+//                puts2("\033[2J\033[1;1f");
+//                printf("\033[%d;%dfX\033[%d;%df", my + 1, mx + 1, my + 1, mx + 1);
+//            }
+//            break;
+//        }
+//    }
+//}
 
 int main(int argc, char **argv) {
     fd_set fds;
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     struct winsize winsz;
     int kb_fd = STDIN_FILENO, ms_fd;
     char buf[512];
-    ssize_t len;
+    //ssize_t len;
 
     signal(SIGINT, signal_handle);
 
@@ -109,13 +109,20 @@ int main(int argc, char **argv) {
 
         if (res != 0) {
             if (FD_ISSET(ms_fd, &fds)) {
-                len = read(ms_fd, buf, sizeof(buf));
-                ms_handle(buf, len);
+                read(ms_fd, buf, sizeof(buf));
+                printf("Mouse\n");
+                //ms_handle(buf, len);
             }
             if (FD_ISSET(kb_fd, &fds)) {
-                len = read(kb_fd, buf, sizeof(buf));
-                kb_handle(buf, len);
+                read(kb_fd, buf, sizeof(buf));
+                printf("Keyboard\n");
+                //kb_handle(buf, len);
+                if (buf[0] == 'q') {
+                    break;
+                }
             }
+        } else {
+            printf("Timeout\n");
         }
     }
 

@@ -1,5 +1,6 @@
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -91,15 +92,16 @@ int main(int argc, char **argv) {
     }
 
     // Check that "dst" is a directory
-    if ((res = stat(dst, &st)) != 0) {
-        perror(dst);
-        return -1;
-    }
+    // TODO: stat() is fucked
+    //if ((res = stat(dst, &st)) != 0) {
+    //    perror(dst);
+    //    return -1;
+    //}
 
-    if ((st.st_mode & S_IFMT) != S_IFDIR) {
-        printf("%s: Not a directory\n", dst);
-        return -1;
-    }
+    //if ((st.st_mode & S_IFMT) != S_IFDIR) {
+    //    printf("%s: Not a directory\n", dst);
+    //    return -1;
+    //}
 
     // Do the magic stuff
     if ((res = mount(src, dst, type, mount_flags, NULL)) != 0) {

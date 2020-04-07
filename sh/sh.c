@@ -1,4 +1,5 @@
 #include <sys/utsname.h>
+#include <sys/gets2.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
 #include <signal.h>
@@ -21,7 +22,7 @@ static void update_prompt(void) {
     struct utsname _u;
     struct passwd _p;
     struct passwd *p;
-    char pwbuf[512];
+    char pwbuf[256];
 
     p_uid = getuid();
 
@@ -32,11 +33,9 @@ static void update_prompt(void) {
 
     if (uname(&_u) != 0) {
         perror("uname()");
-        p_hostname[0] = 0;
     } else {
         strcpy(p_hostname, _u.nodename);
     }
-
     if (getpwuid_r(p_uid, &_p, pwbuf, sizeof(pwbuf), &p) != 0) {
         perror("getpwuid_r()");
         p_username[0] = 0;
@@ -55,13 +54,13 @@ static void display_prompt(void) {
                 putchar(p_uid == 0 ? '#' : '$');
                 break;
             case 'h':
-                puts2(p_hostname);
+                fputs(p_hostname, stdout);
                 break;
             case 'u':
-                puts2(p_username);
+                fputs(p_username, stdout);
                 break;
             case 'd':
-                puts2(p_cwd);
+                fputs(p_cwd, stdout);
                 break;
             default:
                 putchar('%');
@@ -74,6 +73,8 @@ static void display_prompt(void) {
 
         ++p;
     }
+
+    fflush(stdout);
 }
 
 static void signal_handle(int signum) {

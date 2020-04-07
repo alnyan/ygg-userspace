@@ -111,21 +111,21 @@ static int ls_dir(const char *path, int flags) {
                     break;
                 case DT_BLK:
                 case DT_CHR:
-                    write(STDOUT_FILENO, COLOR_DEV, 5);
+                    fputs(COLOR_DEV, stdout);
                     break;
                 case DT_DIR:
-                    write(STDOUT_FILENO, COLOR_DIR, 5);
+                    fputs(COLOR_DIR, stdout);
                     break;
                 default:
-                    write(STDOUT_FILENO, COLOR_UNKNOWN, 5);
+                    fputs(COLOR_UNKNOWN, stdout);
                     break;
                 }
             }
-            write(STDOUT_FILENO, ent->d_name, strlen(ent->d_name));
+            fputs(ent->d_name, stdout);
             if (flags & LS_COLOR) {
-                write(STDOUT_FILENO, COLOR_RESET, 4);
+                fputs(COLOR_RESET, stdout);
             }
-            putchar('\n');
+            fputc('\n', stdout);
         }
     }
 
