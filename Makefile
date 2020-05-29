@@ -20,7 +20,9 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/mount \
 		  $(STAGE)/bin/umount \
 		  $(STAGE)/bin/date \
-		  $(STAGE)/bin/login
+		  $(STAGE)/bin/login \
+		  $(STAGE)/bin/insmod \
+		  $(STAGE)/test.ko
 
 # TODO
 # newlib: gettimeofday is broken?
@@ -97,6 +99,18 @@ $(STAGE)/bin/vsh: $(vsh_OBJS)
 
 $(STAGE)/bin/ase: $(ase_OBJS)
 	$(CC) -o $@ $(usr_LDFLAGS) $(ase_OBJS)
+
+$(STAGE)/test.ko: module.c module.ld
+	$(CC) \
+		-I ../kernel/include \
+		-r \
+		-O0 \
+		-g \
+		-mcmodel=large \
+		-Tmodule.ld \
+		-nostdlib \
+		-ffreestanding \
+		-o $@ module.c
 
 $(O)/vsh/%.o: vsh/%.c $(shell find vsh -name "*.h")
 	$(CC) -c -o $@ $(usr_CFLAGS) $<
