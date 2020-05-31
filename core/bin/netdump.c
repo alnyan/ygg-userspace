@@ -6,12 +6,10 @@
 #define LINE_LENGTH         16
 
 static void line_print(size_t off, const char *line, size_t len) {
-    printf("%08x: ", off);
+    printf("%08lx: ", off);
     for (size_t i = 0; i < LINE_LENGTH; ++i) {
-        // XXX: This is needed because I didn't implement h/hh modifiers in printf
-        uint64_t byte = (uint64_t) line[i] & 0xFF;
         if (i < len) {
-            printf("%02x", byte);
+            printf("%02hhx", line[i] & 0xFF);
         } else {
             printf("  ");
         }
@@ -77,7 +75,7 @@ int main(int argc, char **argv) {
         }
 
         if (res > 0) {
-            ssize_t len = recvfrom(fd, buf, sizeof(buf), &sa, &salen);
+            ssize_t len = recvfrom(fd, buf, sizeof(buf), 0, &sa, &salen);
 
             if (len < 0) {
                 perror("recvfrom()");

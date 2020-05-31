@@ -1,6 +1,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <stdio.h>
 
 int main(int argc, char **argv) {
@@ -24,7 +25,7 @@ int main(int argc, char **argv) {
     }
 
     while (1) {
-        ssize_t d = recvfrom(fd, buf, sizeof(buf), (struct sockaddr *) &sa, &salen);
+        ssize_t d = recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *) &sa, &salen);
         if (d < 0) {
             perror("recvfrom()");
             break;

@@ -1,3 +1,4 @@
+#include <ygg/reboot.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
@@ -28,6 +29,6 @@ int main(int argc, char **argv) {
     }
 
     while (1) {
-        usleep(1000000);
+        // TODO: bring usleep() back
     }
 }

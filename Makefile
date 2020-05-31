@@ -23,6 +23,11 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/login \
 		  $(STAGE)/bin/insmod \
 		  $(STAGE)/bin/netctl \
+		  $(STAGE)/bin/netdump \
+		  $(STAGE)/bin/netmeow \
+		  $(STAGE)/bin/reboot \
+		  $(STAGE)/bin/ping \
+		  $(STAGE)/bin/com \
 		  $(STAGE)/test.ko
 
 # TODO
@@ -30,19 +35,11 @@ STAGE_BIN=$(STAGE)/init \
 
 # newlib: port mount()/umount()
 # newlib: port reboot()
-		 # $(STAGE)/bin/reboot \
 
-
-		 # $(STAGE)/bin/netmeow \
-		 # $(STAGE)/bin/netdump \
-		 # $(STAGE)/bin/ping \
-
-		 # $(STAGE)/bin/mouse \
-		 # $(STAGE)/bin/ase \
-		 # $(STAGE)/bin/vsh
-
-#		  $(STAGE)/bin/com \
 #		  $(STAGE)/bin/su \
+
+
+
 
 sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/readline.o \
