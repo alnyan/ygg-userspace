@@ -22,6 +22,7 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/date \
 		  $(STAGE)/bin/login \
 		  $(STAGE)/bin/insmod \
+		  $(STAGE)/bin/netctl \
 		  $(STAGE)/test.ko
 
 # TODO
@@ -32,7 +33,6 @@ STAGE_BIN=$(STAGE)/init \
 		 # $(STAGE)/bin/reboot \
 
 
-		 # $(STAGE)/bin/netctl \
 		 # $(STAGE)/bin/netmeow \
 		 # $(STAGE)/bin/netdump \
 		 # $(STAGE)/bin/ping \
