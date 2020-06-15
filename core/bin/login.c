@@ -119,7 +119,7 @@ static int loginuid(uid_t uid, gid_t gid, const char *sh) {
         ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
 
         const char *argp[] = { sh, NULL };
-        _exit(execve(sh, (char *const *) argp, NULL));
+        _exit(execve(sh, (char *const *) argp, environ));
     } else {
         int st;
         waitpid(sh_pid, &st, 0);

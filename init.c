@@ -18,8 +18,21 @@ static int start_login(void) {
     const char *const argp[] = {
         login, NULL
     };
-    // No fork needed, I guess
-    return execve(login, (char *const *) argp, NULL);
+
+    int pid = fork();
+    int res;
+
+    switch (pid) {
+    case 0:
+        return execve(login, (char *const *) argp, environ);
+    case -1:
+        fprintf(stderr, "Init program failed\n");
+        return -1;
+    default:
+        waitpid(pid, &res, 0);
+        return 0;
+    }
+
 }
 
 int main(int argc, char **argv) {
@@ -30,7 +43,7 @@ int main(int argc, char **argv) {
 
     mount(NULL, "/dev", "devfs", 0, NULL);
     mount(NULL, "/sys", "sysfs", 0, NULL);
-    mount("/dev/sda1", "/mnt", NULL, 0, NULL);
+    mount("/dev/sda", "/mnt", NULL, 0, NULL);
 
     uint32_t inaddr = 0x0A000001;
     netctl("eth0", NETCTL_SET_INADDR, &inaddr);

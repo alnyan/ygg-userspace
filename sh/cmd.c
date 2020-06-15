@@ -68,7 +68,7 @@ static int cmd_spawn(const char *path, const struct cmd_exec *cmd, int *cmd_res)
         pid = getpid();
         ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
         setpgid(0, 0);
-        exit(execve(path, (char *const *) cmd->args, NULL));
+        exit(execve(path, (char *const *) cmd->args, environ));
     } else {
         if (waitpid(pid, cmd_res, 0) != 0) {
             perror("waitpid()");
@@ -96,10 +96,36 @@ static int cmd_exec_binary(const struct cmd_exec *cmd, int *cmd_res) {
         return cmd_spawn(path_path, cmd, cmd_res);
     }
 
-    snprintf(path_path, sizeof(path_path), "%s/%s", PATH, cmd->args[0]);
-    if ((res = access(path_path, X_OK)) == 0) {
-        return cmd_spawn(path_path, cmd, cmd_res);
+    const char *pathvar = getenv("PATH");
+    if (!pathvar || !*pathvar) {
+        return -1;
     }
+
+    const char *p = pathvar;
+    const char *e;
+    while (1) {
+        e = strchr(p, ':');
+        size_t len;
+        if (!e) {
+            len = strlen(p);
+        } else {
+            len = e - p;
+        }
+
+        strncpy(path_path, p, len);
+        path_path[len] = '/';
+        strcpy(path_path + len + 1, cmd->args[0]);
+
+        if ((res = access(path_path, X_OK)) == 0) {
+            return cmd_spawn(path_path, cmd, cmd_res);
+        }
+
+        if (!e) {
+            break;
+        }
+        p = e + 1;
+    }
+
     return -1;
 }
 

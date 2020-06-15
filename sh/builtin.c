@@ -22,6 +22,14 @@ static struct sh_builtin __builtins[];
 
 ////
 
+DEF_BUILTIN(env) {
+    for (size_t i = 0; environ[i]; ++i) {
+        printf("%s\n", environ[i]);
+    }
+
+    return 0;
+}
+
 DEF_BUILTIN(exit) {
     if (cmd->argc > 1) {
         exit(atoi(cmd->args[1]));
@@ -206,6 +214,17 @@ DEF_BUILTIN(echo) {
     return 0;
 }
 
+DEF_BUILTIN(set) {
+    if (cmd->argc != 3) {
+        fprintf(stderr, "Usage: set <key> <value>\n");
+        return -1;
+    }
+
+    setenv(cmd->args[1], cmd->args[2], 1);
+
+    return 0;
+}
+
 // TODO: support usernames (getpwnam_r)
 DEF_BUILTIN(setid) {
     if (cmd->argc == 2) {
@@ -250,8 +269,10 @@ static struct sh_builtin __builtins[] = {
     DECL_BUILTIN(chown),
     DECL_BUILTIN(clear),
     DECL_BUILTIN(echo),
+    DECL_BUILTIN(env),
     DECL_BUILTIN(exec),
     DECL_BUILTIN(exit),
+    DECL_BUILTIN(set),
     DECL_BUILTIN(setid),
     DECL_BUILTIN(stat),
     DECL_BUILTIN(sync),

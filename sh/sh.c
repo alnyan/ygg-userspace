@@ -3,6 +3,7 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <pwd.h>
@@ -108,6 +109,9 @@ int main(int argc, char **argv) {
         printf("usage: sh [filename]\n");
         return -1;
     }
+
+    // TODO: source /etc/profile?
+    setenv("PATH", "/sbin:/bin", 0);
 
     if (!isatty(fd)) {
         while (1) {
