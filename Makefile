@@ -21,13 +21,14 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/umount \
 		  $(STAGE)/bin/date \
 		  $(STAGE)/bin/login \
-		  $(STAGE)/bin/insmod \
 		  $(STAGE)/bin/netctl \
 		  $(STAGE)/bin/netdump \
 		  $(STAGE)/bin/netmeow \
-		  $(STAGE)/bin/reboot \
 		  $(STAGE)/bin/ping \
 		  $(STAGE)/bin/com \
+		  $(STAGE)/bin/wr \
+		  $(STAGE)/sbin/insmod \
+		  $(STAGE)/sbin/reboot \
 		  $(STAGE)/test.ko
 
 # TODO
@@ -77,7 +78,11 @@ mkdirs:
 	mkdir -p $(DIRS)
 
 mkstage-etc:
-	mkdir -p $(STAGE)/dev $(STAGE)/mnt $(STAGE)/bin $(STAGE)/sys
+	mkdir -p $(STAGE)/dev \
+			 $(STAGE)/mnt \
+			 $(STAGE)/bin \
+			 $(STAGE)/sys \
+			 $(STAGE)/sbin
 	cp -r etc $(STAGE)
 
 # Application building
@@ -86,6 +91,9 @@ $(STAGE)/init: init.c
 	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) init.c
 
 $(STAGE)/bin/%: core/bin/%.c
+	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) $<
+
+$(STAGE)/sbin/%: core/sbin/%.c
 	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) $<
 
 $(STAGE)/bin/sh: $(sh_OBJS)
