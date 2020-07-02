@@ -1,6 +1,5 @@
 #include <sys/termios.h>
-// TODO
-//#include <sys/ioctl.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,53 +10,36 @@
 
 #include "builtin.h"
 #include "config.h"
+#include "parse.h"
 #include "cmd.h"
 
-int ioctl(int fd, unsigned long req, ...);
+typedef int (*spawn_func_t) (void *arg, struct cmd_unit *cmd);
 
-static int make_cmd(char *input, struct cmd_exec *ex) {
-    char *p = strchr(input, ' ');
-    char *e;
-
-    if (!p) {
-        ex->args[0] = input;
-        ex->args[1] = NULL;
-        ex->argc = 1;
-        return 0;
-    }
-
-    *p++ = 0;
-    ex->args[0] = input;
-    ex->argc = 1;
-
-    while (1) {
-        while (isspace(*p)) {
-            ++p;
-        }
-        if (!*p) {
-            break;
-        }
-
-        e = strchr(p, ' ');
-
-        if (!e) {
-            ex->args[ex->argc++] = p;
-            break;
-        } else {
-            *e++ = 0;
-            ex->args[ex->argc++] = p;
-            p = e;
-        }
-    }
-    ex->args[ex->argc] = NULL;
-
-    return 0;
+static int spawn_binary(void *arg, struct cmd_unit *cmd) {
+    return execve(arg, (char *const *) cmd->args, environ);
 }
 
-//
+static int spawn_builtin(void *arg, struct cmd_unit *cmd) {
+    builtin_func_t func = arg;
+    return func(cmd);
+}
 
-static int cmd_spawn(const char *path, const struct cmd_exec *cmd, int *cmd_res) {
+static int cmd_spawn(spawn_func_t fn, void *arg, struct cmd_unit *cmd, int *pgid) {
     int pid;
+    int pipe_fds[2];
+
+    if (cmd->next) {
+        // Create pipe pair for this -> next communication
+        int res = pipe(pipe_fds);
+        if (res != 0) {
+            return -1;
+        }
+
+        // this stdout = write end
+        cmd->fds[1] = pipe_fds[1];
+        // next stdin = read end
+        cmd->next->fds[0] = pipe_fds[0];
+    }
 
     if ((pid = fork()) < 0) {
         perror("fork()");
@@ -66,23 +48,38 @@ static int cmd_spawn(const char *path, const struct cmd_exec *cmd, int *cmd_res)
 
     if (pid == 0) {
         pid = getpid();
-        ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
-        setpgid(0, 0);
-        exit(execve(path, (char *const *) cmd->args, environ));
-    } else {
-        if (waitpid(pid, cmd_res, 0) != 0) {
-            perror("waitpid()");
+        if (*pgid == -1) {
+            *pgid = pid;
+        }
+        setpgid(0, *pgid);
+
+        if (cmd->prev) {
+            dup2(STDIN_FILENO, cmd->fds[0]);
+        }
+        if (cmd->next) {
+            dup2(STDOUT_FILENO, cmd->fds[1]);
         }
 
-        // Regain control of foreground group
-        pid = getpgid(0);
-        ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
+        if (isatty(STDIN_FILENO)) {
+            ioctl(STDIN_FILENO, TIOCSPGRP, &pid);
+        }
 
+        exit(fn(arg, cmd));
+    } else {
+        if (cmd->next) {
+            // Close write end, it's now handled by child
+            close(pipe_fds[1]);
+        }
+        if (cmd->prev) {
+            // Close read end, it's now handled by child
+            close(cmd->fds[0]);
+        }
+        cmd->pid = pid;
         return 0;
     }
 }
 
-static int cmd_exec_binary(const struct cmd_exec *cmd, int *cmd_res) {
+static int cmd_exec_binary(struct cmd_unit *cmd, int *pgid) {
     char path_path[256];
     int res;
 
@@ -93,7 +90,7 @@ static int cmd_exec_binary(const struct cmd_exec *cmd, int *cmd_res) {
         }
 
         strcpy(path_path, cmd->args[0]);
-        return cmd_spawn(path_path, cmd, cmd_res);
+        return cmd_spawn(spawn_binary, path_path, cmd, pgid);
     }
 
     const char *pathvar = getenv("PATH");
@@ -117,7 +114,7 @@ static int cmd_exec_binary(const struct cmd_exec *cmd, int *cmd_res) {
         strcpy(path_path + len + 1, cmd->args[0]);
 
         if ((res = access(path_path, X_OK)) == 0) {
-            return cmd_spawn(path_path, cmd, cmd_res);
+            return cmd_spawn(spawn_binary, path_path, cmd, pgid);
         }
 
         if (!e) {
@@ -129,15 +126,26 @@ static int cmd_exec_binary(const struct cmd_exec *cmd, int *cmd_res) {
     return -1;
 }
 
-static int cmd_exec(const struct cmd_exec *cmd) {
-    int res, cmd_res;
+static int cmd_unit_exec(struct cmd_unit *cmd, int *pgid) {
+    int res;
+    builtin_func_t builtin;
 
-    if ((res = builtin_exec(cmd, &cmd_res)) == 0) {
-        return cmd_res;
+    // TODO: don't spawn ALL the commands as separate processes
+    //       e.g. exit is broken and $$ evaluation will be incorrect
+    //       this is just a dirty workaround for "exit"
+    if (!strcmp(cmd->args[0], "exit")) {
+        if (cmd->argc > 1) {
+            exit(atoi(cmd->args[1]));
+        }
+        exit(0);
+    } else {
+        if ((builtin = builtin_find(cmd->args[0])) != NULL) {
+            return cmd_spawn(spawn_builtin, builtin, cmd, pgid);
+        }
     }
 
-    if ((res = cmd_exec_binary(cmd, &cmd_res)) == 0) {
-        return cmd_res;
+    if ((res = cmd_exec_binary(cmd, pgid)) == 0) {
+        return 0;
     }
 
     printf("sh: command not found: %s\n", cmd->args[0]);
@@ -145,8 +153,9 @@ static int cmd_exec(const struct cmd_exec *cmd) {
 }
 
 int eval(char *str) {
-    struct cmd_exec cmd;
     char *p;
+    struct cmd cmd;
+    int cmd_res, pgid;
 
     while (isspace(*str)) {
         ++str;
@@ -160,9 +169,28 @@ int eval(char *str) {
         return 0;
     }
 
-    if (make_cmd(str, &cmd) != 0) {
-        abort();
+    if (cmd_parse(str, &cmd) != 0) {
+        return -1;
     }
 
-    return cmd_exec(&cmd);
+    // Spawn all subprocesses
+    pgid = -1;
+    for (struct cmd_unit *u = cmd.first; u; u = u->next) {
+        cmd_unit_exec(u, &pgid);
+    }
+
+    // Wait for spawned subprocesses to finish
+    for (struct cmd_unit *u = cmd.first; u; u = u->next) {
+        if (u->pid != -1) {
+            if (waitpid(u->pid, &cmd_res, 0) != 0) {
+                perror("waitpid()");
+            }
+        }
+    }
+
+    // Regain control of foreground group
+    pgid = getpgid(0);
+    ioctl(STDIN_FILENO, TIOCSPGRP, &pgid);
+
+    return 0;
 }

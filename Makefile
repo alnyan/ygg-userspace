@@ -29,7 +29,12 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/bin/wr \
 		  $(STAGE)/sbin/insmod \
 		  $(STAGE)/sbin/reboot \
+		  $(STAGE)/sbin/lspci \
+		  $(STAGE)/bin/vsh \
+		  $(STAGE)/bin/grep \
 		  $(STAGE)/test.ko
+
+#		  $(STAGE)/bin/t0 \
 
 # TODO
 # newlib: gettimeofday is broken?
@@ -44,9 +49,12 @@ STAGE_BIN=$(STAGE)/init \
 
 sh_OBJS=$(O)/sh/sh.o \
 		$(O)/sh/readline.o \
-		$(O)/sh/builtin.o \
-		$(O)/sh/cmd.o
+		$(O)/sh/cmd.o \
+		$(O)/sh/parse.o \
+		$(O)/sh/builtin.o
+
 ase_OBJS=$(O)/ase/ase.o
+
 vsh_OBJS=$(O)/vsh/vsh.o \
 		 $(O)/vsh/input.o \
 		 $(O)/vsh/video.o \
@@ -89,6 +97,15 @@ mkstage-etc:
 $(STAGE)/init: init.c
 	@printf " CC\t%s\n" $(@:$(STAGE)/%=/%)
 	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) init.c
+
+$(STAGE)/bin/t0: t0.c
+	$(CC) -I../ports/SDL2-2.0.12/include \
+		  -o $@ \
+		  $(usr_CFLAGS) \
+		  $(usr_LDFLAGS) \
+		  $< \
+		  ../ports/SDL-build/build/.libs/libSDL2.a \
+		  -lm
 
 $(STAGE)/bin/%: core/bin/%.c
 	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) $<

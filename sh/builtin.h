@@ -1,5 +1,7 @@
 #pragma once
 
-struct cmd_exec;
+struct cmd_unit;
 
-int builtin_exec(const struct cmd_exec *cmd, int *res);
+typedef int (*builtin_func_t) (const struct cmd_unit *);
+
+builtin_func_t builtin_find(const char *name);
