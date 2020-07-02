@@ -30,6 +30,7 @@ STAGE_BIN=$(STAGE)/init \
 		  $(STAGE)/sbin/insmod \
 		  $(STAGE)/sbin/reboot \
 		  $(STAGE)/sbin/lspci \
+		  $(STAGE)/bin/table \
 		  $(STAGE)/bin/vsh \
 		  $(STAGE)/bin/grep \
 		  $(STAGE)/test.ko
