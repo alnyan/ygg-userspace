@@ -1,20 +1,15 @@
+#include <sys/termios.h>
 #include <sys/fcntl.h>
-// TODO
-//#include <sys/ioctl.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
-#include <sys/termios.h>
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
 #include <pwd.h>
-
-int ioctl(int fd, unsigned long req, ...);
-
-#include <sys/gets2.h>
 
 struct spwd {
     char *sp_namp;
@@ -67,14 +62,18 @@ static ssize_t getline(char *buf, size_t lim, int echo) {
 }
 
 static int getspnam_r(const char *name, struct spwd *sp, char *buf, size_t buf_size) {
-    int fp = open("/etc/shadow", O_RDONLY, 0);
-    if (fp < 0) {
+    FILE *fp = fopen("/etc/shadow", "r");
+    if (!fp) {
         return -1;
     }
 
-    // TODO POSIX
-    while (gets_safe(fp, buf, buf_size)) {
-        char *p0 = strchr(buf, ':');
+    while (fgets(buf, buf_size, fp) != NULL) {
+        char *p0;
+        if (*buf && (p0 = strchr(buf, '\n')) != NULL) {
+            *p0 = 0;
+        }
+
+        p0 = strchr(buf, ':');
         if (!p0) {
             break;
         }
@@ -90,13 +89,13 @@ static int getspnam_r(const char *name, struct spwd *sp, char *buf, size_t buf_s
             continue;
         }
 
-        close(fp);
+        fclose(fp);
         sp->sp_namp = buf;
         sp->sp_pwdp = p0 + 1;
         return 0;
     }
 
-    close(fp);
+    fclose(fp);
     errno = ENOENT;
     return -1;
 }
