@@ -30,8 +30,8 @@ mkstage-etc:
 	cp -r etc $(STAGE)
 
 mkstage-progs:
-	$(foreach dir,$(wildcard progs/*), 									\
-		CC=$(CC) DESTDIR=$(abspath $(STAGE)) make -C $(dir) install;	\
+	$(foreach dir,$(wildcard progs/*), 											\
+		CC=$(CC) DESTDIR=$(abspath $(STAGE)) make -C $(dir) install || exit 1;	\
 	)
 
 $(STAGE)/init: init.c
