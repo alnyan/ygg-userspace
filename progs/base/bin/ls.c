@@ -34,7 +34,7 @@ static int ls_dir(const char *path, int flags) {
             if (flags & (LS_DETAIL | LS_TIME)) {
                 snprintf(ent_path, sizeof(ent_path), "%s/%s",
                     strcmp(path, "") ? path : ".", ent->d_name);
-                stat_res = stat(ent_path, &ent_stat);
+                stat_res = lstat(ent_path, &ent_stat);
             }
 
             if (flags & LS_DETAIL) {
