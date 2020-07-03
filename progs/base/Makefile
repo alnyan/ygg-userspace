@@ -10,6 +10,7 @@ LDFLAGS?=-lgcc
 O=build
 
 BINS=$(O)/bin/ls \
+	 $(O)/bin/pager \
 	 $(O)/bin/cat \
 	 $(O)/bin/login \
 	 $(O)/bin/date \
