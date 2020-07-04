@@ -1,15 +1,37 @@
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
 
+static void statusline(size_t height, size_t scroll, size_t lines, int is_eof) {
+    printf("\033[%lu;1f\033[7m", height + 1);
+    if (lines >= height) {
+        printf("lines %lu-%lu", lines - height - scroll, lines - scroll);
+    } else {
+        printf("lines %lu-%lu", 0L, lines);
+    }
+
+    if (is_eof) {
+        printf("/%lu ", lines);
+        if (scroll) {
+            size_t perc = (100 * (lines - scroll)) / lines;
+            printf("(%lu%%)", perc);
+        } else {
+            fputs("(END)", stdout);
+        }
+    }
+
+    fputs("\033[0m\r", stdout);
+    fflush(stdout);
+}
+
 static void reprint(const char *buf, size_t start, size_t count, size_t limit) {
     // Clear screen
     fputs("\033[2J\033[1;1f", stdout);
-    fflush(stdout);
 
     // Assuming cursor position is at start
     for (size_t i = start; i < start + count && i < limit; ++i) {
@@ -28,7 +50,22 @@ int main(int argc, char **argv) {
     char *buf;
     char key[256];
     size_t lines, cap, scroll;
+    int eof_reached;
+    FILE *input;
     int tty_fd;
+
+    input = stdin;
+
+    if (argc == 2 && strcmp(argv[1], "-")) {
+        input = fopen(argv[1], "r");
+        if (!input) {
+            perror(argv[1]);
+            return -1;
+        }
+    } else if (argc > 2) {
+        fprintf(stderr, "usage: %s [FILENAME]\n", argv[0]);
+        return -1;
+    }
 
     if (!isatty(STDOUT_FILENO)) {
         fprintf(stderr, "stdout is not a tty\n");
@@ -55,8 +92,9 @@ int main(int argc, char **argv) {
     }
 
     memcpy(&old_termios, &termios, sizeof(struct termios));
+    // TODO: fix this: ICANON is lflag, not iflag!
     termios.c_iflag &= ~ICANON;
-    termios.c_lflag &= ~(ECHO | ECHONL | ECHOE | ECHOK);
+    termios.c_lflag &= ~(ECHO | ECHONL | ECHOE | ECHOK | ICANON);
 
     if (tcsetattr(tty_fd, TCSANOW, &termios) != 0) {
         perror("tcsetattr()");
@@ -70,15 +108,17 @@ int main(int argc, char **argv) {
     buf = malloc(256 * cap);
 
     while (lines < height) {
-        if (fgets(&buf[lines * 256], 256, stdin) == NULL) {
+        if (fgets(&buf[lines * 256], 256, input) == NULL) {
             break;
         }
         ++lines;
     }
 
     scroll = 0;
+    eof_reached = 0;
 
     reprint(buf, 0, lines, lines);
+    statusline(height, scroll, lines, eof_reached);
 
     while ((len = read(tty_fd, key, sizeof(key))) > 0) {
         if (key[0] == 'q') {
@@ -87,28 +127,33 @@ int main(int argc, char **argv) {
 
         if (key[0] == 'j') {
             if (!scroll) {
+                if (eof_reached) {
+                    continue;
+                }
                 // Just read the line and print it at the end
-                if (lines == cap) {
+                if (lines >= cap - 1) {
                     // Grow a single page to the buffer
-                    cap += 256 * height;
-                    buf = realloc(buf, cap);
+                    cap += height;
+                    buf = realloc(buf, cap * 256);
                     if (!buf) {
                         return -1;
                     }
                 }
 
                 // End of file reached?
-                if (fgets(&buf[lines * 256], 256, stdin) == NULL) {
+                if (fgets(&buf[lines * 256], 256, input) == NULL) {
+                    eof_reached = 1;
+                    statusline(height, scroll, lines, eof_reached);
                     continue;
                 }
 
-                printf("%s", &buf[lines * 256]);
-                fflush(stdout);
-
+                printf("\033[2K%s", &buf[lines * 256]);
                 ++lines;
+                statusline(height, scroll, lines, eof_reached);
             } else {
                 --scroll;
                 reprint(buf, lines - height - scroll, height, lines);
+                statusline(height, scroll, lines, eof_reached);
             }
 
             continue;
@@ -119,13 +164,48 @@ int main(int argc, char **argv) {
                     ++scroll;
 
                     reprint(buf, lines - height - scroll, height, lines);
+                    statusline(height, scroll, lines, eof_reached);
                 }
             }
+        } else if (key[0] == 'g') {
+            if (lines >= height) {
+                scroll = lines - height;
+                reprint(buf, 0, height, lines);
+                statusline(height, scroll, lines, eof_reached);
+            }
+        } else if (key[0] == 'G') {
+            // Read the file until end
+            while (!eof_reached) {
+                if (lines >= cap - 1) {
+                    // Grow a single page to the buffer
+                    cap += height;
+                    buf = realloc(buf, cap * 256);
+                    if (!buf) {
+                        return -1;
+                    }
+                }
+
+                // End of file reached?
+                if (fgets(&buf[lines * 256], 256, input) == NULL) {
+                    eof_reached = 1;
+                    break;
+                }
+                ++lines;
+            }
+
+            scroll = 0;
+            if (lines >= height) {
+                reprint(buf, lines - height, height, lines);
+            } else {
+                reprint(buf, 0, height, lines);
+            }
+            statusline(height, scroll, lines, eof_reached);
         }
     }
 
     tcsetattr(tty_fd, TCSANOW, &old_termios);
     close(tty_fd);
+    fputs("\033[2J\033[1;1f", stdout);
 
     return 0;
 }
