@@ -20,7 +20,6 @@ BINS=$(O)/bin/ls \
 	 $(O)/bin/rm \
 	 $(O)/bin/table \
 	 $(O)/bin/uname \
-	 $(O)/bin/wr \
 	 $(O)/bin/mkfifo \
 	 $(O)/bin/sleep \
 	 $(O)/sbin/lspci \
