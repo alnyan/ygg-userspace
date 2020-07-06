@@ -57,6 +57,9 @@ static int ls_dir(const char *path, int flags) {
                     case S_IFLNK:
                         t = 'l';
                         break;
+                    case S_IFIFO:
+                        t = 'p';
+                        break;
                     default:
                         t = '?';
                         break;
