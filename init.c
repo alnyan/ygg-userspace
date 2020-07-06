@@ -24,7 +24,7 @@ static int start_login(void) {
 
     switch (pid) {
     case 0:
-        return execve(login, (char *const *) argp, environ);
+        exit(execve(login, (char *const *) argp, environ));
     case -1:
         fprintf(stderr, "Init program failed\n");
         return -1;
@@ -35,6 +35,26 @@ static int start_login(void) {
 
 }
 
+static int start_acpid(void) {
+    const char *acpid = "/sbin/acpid";
+    const char *const argp[] = {
+        acpid, NULL
+    };
+
+    int pid = fork();
+    int res;
+
+    switch (pid) {
+    case 0:
+        exit(execve(acpid, (char *const *) argp, environ));
+    case -1:
+        fprintf(stderr, "acpid failed to start\n");
+        return -1;
+    default:
+        return 0;
+    }
+}
+
 int main(int argc, char **argv) {
     if (getpid() != 1) {
         printf("Won't work if PID is not 1\n");
@@ -43,10 +63,13 @@ int main(int argc, char **argv) {
 
     mount(NULL, "/dev", "devfs", 0, NULL);
     mount(NULL, "/sys", "sysfs", 0, NULL);
-    mount("/dev/sda", "/mnt", NULL, 0, NULL);
+    //mount("/dev/sda", "/mnt", NULL, 0, NULL);
 
     uint32_t inaddr = 0x0A000001;
     netctl("eth0", NETCTL_SET_INADDR, &inaddr);
+
+    // Start acpid
+    start_acpid();
 
     return start_login();
 }
