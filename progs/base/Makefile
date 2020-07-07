@@ -22,6 +22,7 @@ BINS=$(O)/bin/ls \
 	 $(O)/bin/uname \
 	 $(O)/bin/mkfifo \
 	 $(O)/bin/sleep \
+	 $(O)/bin/ucat \
 	 $(O)/sbin/lspci \
 	 $(O)/sbin/insmod \
 	 $(O)/sbin/reboot \
