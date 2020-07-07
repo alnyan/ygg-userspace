@@ -23,6 +23,8 @@ BINS=$(O)/bin/ls \
 	 $(O)/bin/mkfifo \
 	 $(O)/bin/sleep \
 	 $(O)/bin/ucat \
+	 $(O)/sbin/mount \
+	 $(O)/sbin/umount \
 	 $(O)/sbin/lspci \
 	 $(O)/sbin/insmod \
 	 $(O)/sbin/reboot \

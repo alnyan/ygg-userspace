@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo Mounting /dev
+mount -t devfs /dev
+
+echo Mounting /sys
+mount -t sysfs /sys

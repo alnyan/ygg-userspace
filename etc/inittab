@@ -1,3 +1,5 @@
 # Runlevels: 1
 
+init:1:wait:/sbin/rc default
+
 l0:1:once:/bin/login

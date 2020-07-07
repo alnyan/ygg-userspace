@@ -9,6 +9,10 @@ int main(int argc, char **argv) {
     fclose(stdin);
 
     FILE *fp = fopen("/dev/acpi", "rb");
+    if (!fp) {
+        perror("/dev/acpi");
+        return -1;
+    }
     int ch;
 
     // TODO: fix fopen for tty
@@ -18,11 +22,6 @@ int main(int argc, char **argv) {
     }
 
     fclose(stderr);
-
-    if (!fp) {
-        perror("/dev/acpi");
-        return -1;
-    }
 
     while ((ch = fgetc(fp)) > 0) {
         switch (ch) {

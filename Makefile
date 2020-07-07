@@ -5,7 +5,6 @@ KERNEL_HDRS?=kernel-hdr
 CC=x86_64-elf-yggdrasil-gcc
 
 DIRS=$(STAGE)
-STAGE_BIN=$(STAGE)/init
 
 all: mkdirs $(O)/initrd.img
 
@@ -15,7 +14,7 @@ clean:
 		make -C $(dir) clean;			\
 	)
 
-$(O)/initrd.img: mkstage-etc $(STAGE_BIN) mkstage-progs
+$(O)/initrd.img: mkstage-etc mkstage-progs
 	cd $(STAGE) && tar czf $(abspath $@) *
 
 mkdirs:
@@ -33,6 +32,3 @@ mkstage-progs:
 	$(foreach dir,$(wildcard progs/*), 											\
 		CC=$(CC) DESTDIR=$(abspath $(STAGE)) make -C $(dir) install || exit 1;	\
 	)
-
-$(STAGE)/init: init.c
-	$(CC) -o $@ $(usr_CFLAGS) $(usr_LDFLAGS) init.c
