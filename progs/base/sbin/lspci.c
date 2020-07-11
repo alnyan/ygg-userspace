@@ -25,7 +25,7 @@ static int read_pci_device(struct pci_device_config *cfg, FILE *fp) {
         FIELD_PARSE("device ", "%hx", id_device) else
         FIELD_PARSE("class ", "%hx", id_class) else
         FIELD_PARSE("subclass ", "%hx", id_subclass) else
-        FIELD_PARSE("prog_if ", "%hx", id_prog_if)
+        FIELD_PARSE("prog if ", "%hx", id_prog_if)
     }
 
 #undef FIELD_PARSE
