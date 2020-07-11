@@ -124,7 +124,7 @@ static void entry_print(const struct entry *ent, int flags) {
                 printf("%s %2u %04u %02u:%02u ",
                     mon_names[(tm.tm_mon - 1) % 12],
                     tm.tm_mday,
-                    tm.tm_year,
+                    tm.tm_year + 1900,
                     tm.tm_hour,
                     tm.tm_min);
             }
