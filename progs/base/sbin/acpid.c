@@ -1,4 +1,4 @@
-#include <ygg/reboot.h>
+#include <sys/reboot.h>
 #include <ygg/acpi.h>
 #include <unistd.h>
 #include <fcntl.h>

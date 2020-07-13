@@ -1,4 +1,4 @@
-#include <ygg/reboot.h>
+#include <sys/reboot.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
