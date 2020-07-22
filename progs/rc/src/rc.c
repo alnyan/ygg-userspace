@@ -1,9 +1,9 @@
+#include <sys/wait.h>
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <wait.h>
 
 #define DIR_DEFAULT         "/etc/rc.d"
 

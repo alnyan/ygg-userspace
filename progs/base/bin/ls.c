@@ -51,11 +51,12 @@ static int entry_vector_init(struct entry_vector *vec) {
     return !vec->data;
 }
 
-static int entry_sort_comparator(const void *v0, const void *v1) {
-    const char *name0 = ((struct entry *) v0)->name;
-    const char *name1 = ((struct entry *) v1)->name;
-    return strcmp(name0, name1);
-}
+// TODO: reimplement qsort(3) in libc
+//static int entry_sort_comparator(const void *v0, const void *v1) {
+//    const char *name0 = ((struct entry *) v0)->name;
+//    const char *name1 = ((struct entry *) v1)->name;
+//    return strcmp(name0, name1);
+//}
 
 static void entry_print(const struct entry *ent, int flags) {
     char t;
@@ -124,7 +125,7 @@ static void entry_print(const struct entry *ent, int flags) {
                 printf("%s %2u %04u %02u:%02u ",
                     mon_names[(tm.tm_mon - 1) % 12],
                     tm.tm_mday,
-                    tm.tm_year + 1900,
+                    tm.tm_year,
                     tm.tm_hour,
                     tm.tm_min);
             }
@@ -193,7 +194,7 @@ static int ls_dir(const char *path, int flags) {
     closedir(dir);
 
     // Sort entries
-    qsort(entries.data, entries.size, sizeof(struct entry), entry_sort_comparator);
+    //qsort(entries.data, entries.size, sizeof(struct entry), entry_sort_comparator);
 
     for (size_t i = 0; i < entries.size; ++i) {
         entry_print(&entries.data[i], flags);

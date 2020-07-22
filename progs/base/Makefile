@@ -3,32 +3,36 @@ CFLAGS?=-ggdb \
 	   	-O0 \
 	   	-Wall \
 	   	-Werror \
+		-Wno-format \
 		-Wno-char-subscripts \
 		-Iinclude
 LDFLAGS?=-lgcc
 
 O=build
 
-BINS=$(O)/bin/ls \
+BINS=$(O)/bin/login \
 	 $(O)/bin/pager \
 	 $(O)/bin/cat \
-	 $(O)/bin/login \
-	 $(O)/bin/date \
-	 $(O)/bin/grep \
 	 $(O)/bin/hexd \
-	 $(O)/bin/mkdir \
-	 $(O)/bin/rm \
-	 $(O)/bin/table \
 	 $(O)/bin/uname \
-	 $(O)/bin/mkfifo \
+	 $(O)/bin/ps \
+	 $(O)/bin/table \
+	 $(O)/bin/grep \
 	 $(O)/bin/sleep \
-	 $(O)/bin/ucat \
 	 $(O)/sbin/mount \
-	 $(O)/sbin/umount \
 	 $(O)/sbin/lspci \
-	 $(O)/sbin/insmod \
-	 $(O)/sbin/reboot \
-	 $(O)/sbin/acpid
+	 $(O)/bin/date \
+	 $(O)/bin/ls
+
+#	 $(O)/bin/mkdir \
+#	 $(O)/bin/rm \
+#	 $(O)/bin/test \
+#	 $(O)/bin/mkfifo \
+#	 $(O)/bin/ucat \
+#	 $(O)/sbin/umount \
+#	 $(O)/sbin/insmod \
+#	 $(O)/sbin/reboot \
+#	 $(O)/sbin/acpid
 
 all: mkdirs $(BINS)
 

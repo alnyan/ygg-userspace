@@ -1,3 +1,4 @@
+#include <sys/debug.h>
 #include <sys/wait.h>
 #include <string.h>
 #include <signal.h>
@@ -5,13 +6,10 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <stdio.h>
-//#include <wait.h>
 
 #define INITTAB         "/etc/inittab"
 // Default runlevel
 #define RUNLEVEL_1      (1 << 0)
-
-extern void ygg_debug_trace(const char *fmt, ...);
 
 enum rc_action {
     RC_ONCE,
@@ -33,9 +31,9 @@ struct rc_rule {
 
 static void sig_handler(int signum) {
     if (signum == SIGTERM) {
-        // TODO: reap children
-        fprintf(stderr, "init received SIGTERM\n");
-        return;
+        if (kill(-1, SIGTERM) != 0) {
+            perror("kill(-1)");
+        }
     }
 }
 
@@ -242,6 +240,7 @@ int main(int argc, char **argv) {
     rc_enter_runlevel(head, runlevel);
 
     while (1) {
-        usleep(1000000);
+        int status;
+        waitpid(-1, &status, 0);
     }
 }

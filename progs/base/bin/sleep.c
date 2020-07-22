@@ -1,7 +1,6 @@
-#include <sys/time.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
-#include <time.h>
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -9,16 +8,5 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    int res;
-    struct timespec t;
-
-    t.tv_sec = atoi(argv[1]);
-    t.tv_nsec = 0;
-
-    if ((res = nanosleep(&t, NULL)) != 0) {
-        perror("sleep");
-        return -1;
-    }
-
-    return 0;
+    return sleep(atoi(argv[1]));
 }

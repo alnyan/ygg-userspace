@@ -1,12 +1,13 @@
-#include <sys/termios.h>
-#include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
+#include <termios.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include <signal.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <errno.h>
 #include <pwd.h>
@@ -19,7 +20,7 @@ struct spwd {
 static int attempt = 0;
 static char line_buf[64];
 
-static ssize_t getline(char *buf, size_t lim, int echo) {
+static ssize_t login_getline(char *buf, size_t lim, int echo) {
     ssize_t len;
     struct termios old_tc;
     struct termios tc;
@@ -185,7 +186,7 @@ int main(int argc, char **argv) {
 
         printf("login: ");
         fflush(stdout);
-        if (getline(line_buf, sizeof(line_buf), 1) < 0) {
+        if (login_getline(line_buf, sizeof(line_buf), 1) < 0) {
             break;
         }
 
@@ -198,7 +199,7 @@ int main(int argc, char **argv) {
         if (sp.sp_pwdp[0] != 0) {
             printf("password: ");
             fflush(stdout);
-            if (getline(line_buf, sizeof(line_buf), 0) < 0) {
+            if (login_getline(line_buf, sizeof(line_buf), 0) < 0) {
                 ++attempt;
                 continue;
             }
@@ -207,8 +208,7 @@ int main(int argc, char **argv) {
         }
 
         // No hashing yet, so just compare passwords
-        if (!strcmp(line_buf, sp.sp_pwdp)) {
-            loginas(sp.sp_namp);
+        if (!strcmp(line_buf, sp.sp_pwdp) && loginas(sp.sp_namp) == 0) {
             // After returning from shell, go here
             attempt = 3;
             continue;
