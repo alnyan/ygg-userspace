@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     char buf[256];
     gettimeofday(&tv0, NULL);
     struct tm tm0;
-    gmtime_r(&tv0.tv_sec, &tm0);
+    gmtime_r((time_t *) &tv0.tv_sec, &tm0);
     strftime(buf, sizeof(buf), "%c\n", &tm0);
     write(STDOUT_FILENO, buf, strlen(buf));
 
