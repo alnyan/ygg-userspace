@@ -1,5 +1,6 @@
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -7,10 +8,10 @@
 #define LINE_LENGTH         16
 
 static void line_print(size_t off, const char *line, size_t len) {
+    uint8_t byte;
     printf("%08zx: ", off);
     for (size_t i = 0; i < LINE_LENGTH; ++i) {
-        // XXX: This is needed because I didn't implement h/hh modifiers in printf
-        uint8_t byte = line[i];
+        byte = line[i];
         if (i < len) {
             printf("%02hhx", byte);
         } else {
@@ -22,9 +23,9 @@ static void line_print(size_t off, const char *line, size_t len) {
     }
     printf("| ");
     for (size_t i = 0; i < len; ++i) {
-        // TODO: isprint?
-        if (((uint8_t) line[i]) >= ' ') {
-            printf("%c", line[i]);
+        byte = line[i];
+        if (isprint(byte)) {
+            printf("%c", byte);
         } else {
             printf(".");
         }
