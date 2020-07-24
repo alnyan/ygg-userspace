@@ -33,7 +33,7 @@ static ssize_t login_getline(char *buf, size_t lim, int echo) {
         }
         memcpy(&tc, &old_tc, sizeof(struct termios));
         // This won't show typed characters, but newlines will still be visible
-        tc.c_lflag &= ~ECHO;
+        tc.c_lflag &= ~(ECHO | ECHOE);
         if (tcsetattr(STDIN_FILENO, TCSANOW, &tc)) {
             perror("tcsetattr()");
             return -1;
