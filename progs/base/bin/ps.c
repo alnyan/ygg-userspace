@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    printf("PID    UID:GID     NAME\n");
+    printf("PID    UID:GID     NAME        PARENT\n");
     while ((ent = readdir(dir))) {
         if (isdigit(ent->d_name[0])) {
             printf("#%-5s ", ent->d_name);
@@ -25,36 +25,46 @@ int main(int argc, char **argv) {
             // Process UID:GID
             snprintf(buf, sizeof(buf), FS_PROC "/%s/ioctx", ent->d_name);
             fp = fopen(buf, "r");
-            if (!fp) {
-                perror(buf);
-                fputs("????:????", stdout);
+            if (!fp || !fgets(buf, sizeof(buf), fp)) {
+                printf("%-11s", "????:????");
             } else {
-                if (fgets(buf, sizeof(buf), fp)) {
-                    if (buf[0] && (p = strchr(buf, '\n'))) {
-                        *p = 0;
-                    }
-                    printf("%-11s ", buf);
-                } else {
-                    fputs("????:????", stdout);
+                if (buf[0] && (p = strchr(buf, '\n'))) {
+                    *p = 0;
                 }
-
+                printf("%-11s ", buf);
+            }
+            if (fp) {
                 fclose(fp);
+                fp = NULL;
             }
 
             // Process name
             snprintf(buf, sizeof(buf), FS_PROC "/%s/name", ent->d_name);
             fp = fopen(buf, "r");
-            if (!fp) {
-                perror(buf);
+            if (!fp || !fgets(buf, sizeof(buf), fp)) {
+                printf("%-12s", "???");
+            } else {
+                if (buf[0] && (p = strchr(buf, '\n'))) {
+                    *p = 0;
+                }
+                printf("%-12s", buf);
+            }
+            if (fp) {
+                fclose(fp);
+                fp = NULL;
+            }
+
+            // Process parent
+            snprintf(buf, sizeof(buf), FS_PROC "/%s/parent", ent->d_name);
+            fp = fopen(buf, "r");
+            if (!fp || !fgets(buf, sizeof(buf), fp)) {
                 fputs("???\n", stdout);
             } else {
-                if (fgets(buf, sizeof(buf), fp)) {
-                    fputs(buf, stdout);
-                } else {
-                    fputs("???\n", stdout);
-                }
-
+                fputs(buf, stdout);
+            }
+            if (fp) {
                 fclose(fp);
+                fp = NULL;
             }
         }
     }
