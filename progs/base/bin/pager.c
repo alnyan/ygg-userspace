@@ -29,14 +29,27 @@ static void statusline(size_t height, size_t scroll, size_t lines, int is_eof) {
     fflush(stdout);
 }
 
-static void reprint(const char *buf, size_t start, size_t count, size_t limit) {
+static void print_line(const char *line, size_t width, int newline) {
+    for (size_t j = 0; line[j] && line[j] != '\n'; ++j) {
+        if (j == width - 2) {
+            // >> arrow
+            fputc(175, stdout);
+            break;
+        }
+        fputc(line[j], stdout);
+    }
+    if (newline) {
+        fputc('\n', stdout);
+    }
+}
+
+static void reprint(const char *buf, size_t start, size_t count, size_t limit, size_t width) {
     // Clear screen
     fputs("\033[2J\033[1;1f", stdout);
 
     // Assuming cursor position is at start
     for (size_t i = start; i < start + count && i < limit; ++i) {
-        const char *line = &buf[i * 256];
-        printf("%s", line);
+        print_line(&buf[i * 256], width, 1);
     }
     fflush(stdout);
 }
@@ -117,7 +130,7 @@ int main(int argc, char **argv) {
     scroll = 0;
     eof_reached = 0;
 
-    reprint(buf, 0, lines, lines);
+    reprint(buf, 0, lines, lines, winsz.ws_col);
     statusline(height, scroll, lines, eof_reached);
 
     while ((len = read(tty_fd, key, sizeof(key))) > 0) {
@@ -147,12 +160,13 @@ int main(int argc, char **argv) {
                     continue;
                 }
 
-                printf("\033[2K%s", &buf[lines * 256]);
+                fputs("\033[2K", stdout);
+                print_line(&buf[lines * 256], winsz.ws_col, 1);
                 ++lines;
                 statusline(height, scroll, lines, eof_reached);
             } else {
                 --scroll;
-                reprint(buf, lines - height - scroll, height, lines);
+                reprint(buf, lines - height - scroll, height, lines, winsz.ws_col);
                 statusline(height, scroll, lines, eof_reached);
             }
 
@@ -163,14 +177,14 @@ int main(int argc, char **argv) {
                 if (scroll < max_scroll) {
                     ++scroll;
 
-                    reprint(buf, lines - height - scroll, height, lines);
+                    reprint(buf, lines - height - scroll, height, lines, winsz.ws_col);
                     statusline(height, scroll, lines, eof_reached);
                 }
             }
         } else if (key[0] == 'g') {
             if (lines >= height) {
                 scroll = lines - height;
-                reprint(buf, 0, height, lines);
+                reprint(buf, 0, height, lines, winsz.ws_col);
                 statusline(height, scroll, lines, eof_reached);
             }
         } else if (key[0] == 'G') {
@@ -195,9 +209,9 @@ int main(int argc, char **argv) {
 
             scroll = 0;
             if (lines >= height) {
-                reprint(buf, lines - height, height, lines);
+                reprint(buf, lines - height, height, lines, winsz.ws_col);
             } else {
-                reprint(buf, 0, height, lines);
+                reprint(buf, 0, height, lines, winsz.ws_col);
             }
             statusline(height, scroll, lines, eof_reached);
         }
