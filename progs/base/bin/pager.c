@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
 
@@ -30,13 +31,25 @@ static void statusline(size_t height, size_t scroll, size_t lines, int is_eof) {
 }
 
 static void print_line(const char *line, size_t width, int newline) {
+    size_t printed = 0;
+    int escape = 0;
     for (size_t j = 0; line[j] && line[j] != '\n'; ++j) {
-        if (j == width - 2) {
+        if (printed == width - 2) {
             // >> arrow
             fputc(175, stdout);
             break;
         }
         fputc(line[j], stdout);
+        if (line[j] == '\033') {
+            escape = 1;
+        }
+        if (escape) {
+            if (isalpha(line[j])) {
+                escape = 0;
+            }
+        } else if (isprint(line[j])) {
+            ++printed;
+        }
     }
     if (newline) {
         fputc('\n', stdout);

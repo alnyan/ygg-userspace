@@ -29,14 +29,6 @@ struct rc_rule {
     struct rc_rule *prev, *next;
 };
 
-static void sig_handler(int signum) {
-    if (signum == SIGTERM) {
-        if (kill(-1, SIGTERM) != 0) {
-            perror("kill(-1)");
-        }
-    }
-}
-
 static void rc_inittab_error(int line, const char *msg) {
     ygg_debug_trace("rc: error on line %d\n", line);
     ygg_debug_trace("rc:   %s\n", msg);
@@ -219,7 +211,6 @@ static int rc_enter_runlevel(const struct rc_rule *head, int runlevel) {
 
 int main(int argc, char **argv) {
     int runlevel = RUNLEVEL_1;
-    signal(SIGTERM, sig_handler);
 
     struct rc_rule *head;
     if (load_inittab(&head) != 0) {

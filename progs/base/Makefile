@@ -19,20 +19,19 @@ BINS=$(O)/bin/login \
 	 $(O)/bin/table \
 	 $(O)/bin/grep \
 	 $(O)/bin/sleep \
+	 $(O)/bin/mkdir \
 	 $(O)/sbin/mount \
 	 $(O)/sbin/lspci \
+	 $(O)/sbin/acpid \
+	 $(O)/sbin/reboot \
 	 $(O)/bin/date \
+	 $(O)/bin/rm \
 	 $(O)/bin/ls
 
-#	 $(O)/bin/mkdir \
-#	 $(O)/bin/rm \
-#	 $(O)/bin/test \
-#	 $(O)/bin/mkfifo \
 #	 $(O)/bin/ucat \
+#	 $(O)/bin/mkfifo \
 #	 $(O)/sbin/umount \
 #	 $(O)/sbin/insmod \
-#	 $(O)/sbin/reboot \
-#	 $(O)/sbin/acpid
 
 all: mkdirs $(BINS)
 
