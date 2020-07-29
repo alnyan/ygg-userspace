@@ -22,6 +22,9 @@ int main(int argc, char **argv) {
     }
 
     while ((ch = fgetc(stdin)) != EOF) {
+        if (ch == 0x04) {
+            break;
+        }
         printf("  0x%02hhx\n", ch);
     }
 
