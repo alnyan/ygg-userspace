@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <time.h>
+#include <pwd.h>
+#include <grp.h>
 
 #define OPT_REVERSE     (1 << 1)
 #define OPT_COUNT       (1 << 2)
@@ -92,6 +94,9 @@ static int entry_sort_comparator(const void *v0, const void *v1) {
 }
 
 static void entry_print(const struct options *opt, const struct entry *ent, int last) {
+    char pwbuf[512];
+    struct passwd pwd, *_pwd;
+    struct group grp, *_grp;
     char buf[64];
     struct tm tm;
     char t;
@@ -146,19 +151,19 @@ static void entry_print(const struct options *opt, const struct entry *ent, int 
             printf("% 3u ", ent->stat.st_nlink);
 
             if (opt->flags & OPT_UID) {
-                if (opt->flags & OPT_NUMERIC) {
+                if ((opt->flags & OPT_NUMERIC) ||
+                    (getpwuid_r(ent->stat.st_uid, &pwd, pwbuf, sizeof(pwbuf), &_pwd) != 0)) {
                     printf("%4u ", ent->stat.st_uid);
                 } else {
-                    // TODO: get owner name
-                    printf("owner  ");
+                    printf("%6s ", pwd.pw_name);
                 }
             }
             if (opt->flags & OPT_GID) {
-                if (opt->flags & OPT_NUMERIC) {
+                if ((opt->flags & OPT_NUMERIC) ||
+                    (getgrgid_r(ent->stat.st_gid, &grp, pwbuf, sizeof(pwbuf), &_grp) != 0)) {
                     printf("%4u ", ent->stat.st_gid);
                 } else {
-                    // TODO: get group name
-                    printf("group  ");
+                    printf("%6s ", grp.gr_name);
                 }
             }
 
@@ -212,6 +217,9 @@ static void fetch_entry(const struct options *opt, struct entry *ent, const char
     switch (ent->stat.st_mode & S_IFMT) {
     case S_IFDIR:
         ent->type = DT_DIR;
+        break;
+    case S_IFLNK:
+        ent->type = DT_LNK;
         break;
     default:
         // TODO: fetch from stat
