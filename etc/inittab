@@ -2,4 +2,4 @@
 
 init:1:wait:/sbin/rc default
 
-l0:1:once:/bin/login /dev/tty0
+l0:1:once:/sbin/login /dev/tty0

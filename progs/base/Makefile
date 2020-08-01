@@ -14,8 +14,7 @@ bin_zcat_LIBS=$(O)/lib/zlib/libz.a
 S=$(abspath .)
 O=build
 
-BINS=$(O)/bin/login \
-	 $(O)/bin/pager \
+BINS=$(O)/bin/pager \
 	 $(O)/bin/cat \
 	 $(O)/bin/hexd \
 	 $(O)/bin/uname \
@@ -28,6 +27,7 @@ BINS=$(O)/bin/login \
 	 $(O)/bin/zcat \
 	 $(O)/bin/showkey \
 	 $(O)/bin/com \
+	 $(O)/sbin/login \
 	 $(O)/sbin/mount \
 	 $(O)/sbin/lspci \
 	 $(O)/sbin/acpid \
