@@ -2,12 +2,12 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 
-#define LINE_LENGTH         16
+#define LINE_LENGTH     16
+#define OPT_CHARS       (1 << 0)
 
-static void line_print(size_t off, const char *line, size_t len) {
+static void line_print(int flags, size_t off, const char *line, size_t len) {
     uint8_t byte;
     printf("%08zx: ", off);
     for (size_t i = 0; i < LINE_LENGTH; ++i) {
@@ -21,81 +21,77 @@ static void line_print(size_t off, const char *line, size_t len) {
             printf(" ");
         }
     }
-    printf("| ");
-    for (size_t i = 0; i < len; ++i) {
-        byte = line[i];
-        if (isprint(byte)) {
-            printf("%c", byte);
-        } else {
-            printf(".");
+
+    if (flags & OPT_CHARS) {
+        printf("| ");
+        for (size_t i = 0; i < len; ++i) {
+            byte = line[i];
+            if (isprint(byte)) {
+                printf("%c", byte);
+            } else {
+                printf(".");
+            }
         }
     }
+
     printf("\n");
 }
 
-int main(int argc, char **argv) {
-    int fd;
-    const char *path;
-    char buf[512];
-    char line[LINE_LENGTH];
-    ssize_t bread;
-    size_t offset;
-    size_t linel;
-    size_t n_full_zero;
+static int do_file(int flags, const char *pathname) {
+    char buf[LINE_LENGTH];
+    size_t bread, off;
+    FILE *fp;
 
-    if (argc != 2) {
-        printf("wrong\n");
+    if (!strcmp(pathname, "-")) {
+        fp = stdin;
+    } else {
+        fp = fopen(pathname, "rb");
+    }
+    if (!fp) {
+        perror(pathname);
         return -1;
     }
 
-    path = argv[1];
+    off = 0;
+    while ((bread = fread(buf, 1, sizeof(buf), fp)) > 0) {
+        line_print(flags, off, buf, bread);
+        off += bread;
+    }
 
-    if (!strcmp(path, "-")) {
-        fd = STDIN_FILENO;
-        printf("Reading from stdin\n");
-    } else {
-        if ((fd = open(path, O_RDONLY, 0)) < 0) {
-            perror(path);
+    if (fp != stdin) {
+        fclose(fp);
+    }
+
+    return 0;
+}
+
+static void usage(char **argv) {
+    fprintf(stderr, "usage: %s [-q] [FILE...]", argv[0]);
+}
+
+int main(int argc, char **argv) {
+    static const char *opts = "q";
+    int flags = OPT_CHARS;
+    int ch;
+
+    while ((ch = getopt(argc, argv, opts)) != -1) {
+        switch (ch) {
+        case 'q':
+            flags &= ~OPT_CHARS;
+            break;
+        case '?':
+            usage(argv);
             return -1;
         }
     }
 
-    offset = 0;
-    linel = 0;
-    n_full_zero = 0;
-    while ((bread = read(fd, buf, sizeof(buf))) > 0) {
-        for (size_t i = 0; i < bread; ++i) {
-            line[linel++] = buf[i];
-            if (linel == LINE_LENGTH) {
-                // Check if the line is all zeros
-                int all_zeros = 1;
-                for (size_t j = 0; j < LINE_LENGTH; ++j) {
-                    if (line[j]) {
-                        all_zeros = 0;
-                        break;
-                    }
-                }
-                if (all_zeros) {
-                    ++n_full_zero;
-                } else {
-                    n_full_zero = 0;
-                }
-
-                if (n_full_zero < 3) {
-                    line_print(offset, line, linel);
-                } else if (n_full_zero == 3) {
-                    printf(" ... \n");
-                }
-                offset += LINE_LENGTH;
-                linel = 0;
-            }
+    if (optind == argc) {
+        do_file(flags, "-");
+    } else {
+        for (int i = optind; i < argc; ++i) {
+            do_file(flags, argv[i]);
         }
     }
-    if (linel) {
-        line_print(offset, line, linel);
-    }
-
-    close(fd);
 
     return 0;
 }
