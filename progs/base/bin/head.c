@@ -1,4 +1,5 @@
 #include <string.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -69,35 +70,28 @@ static int head(const char *filename, ssize_t n, ssize_t c, int *flags) {
     return 0;
 }
 
+static void usage(char **argv) {
+    fprintf(stderr, "usage: %s [-n LINES] [-c BYTES] [FILE...]\n", argv[0]);
+}
+
 int main(int argc, char **argv) {
+    static const char *opts = "c:n:";
     ssize_t n_bytes = 0, n_lines = 0;
     int flags;
-    int i = 1;
-    int start = 1;
+    int ch, i;
 
-    while (i < argc) {
-        if (argv[i][0] == '-') {
-            switch (argv[i][1]) {
-            case 'c':
-                if (i == argc - 1) {
-                    fprintf(stderr, "%s: -c option requires an argument\n", argv[0]);
-                    return EXIT_FAILURE;
-                }
-                n_bytes = atoi(argv[++i]);
-                start = i + 1;
-                break;
-            case 'n':
-                if (i == argc - 1) {
-                    fprintf(stderr, "%s: -n option requires an argument\n", argv[0]);
-                    return EXIT_FAILURE;
-                }
-                n_lines = atoi(argv[++i]);
-                start = i + 1;
-                break;
-            }
+    while ((ch = getopt(argc, argv, opts)) != -1) {
+        switch (ch) {
+        case 'n':
+            n_lines = atoi(optarg);
+            break;
+        case 'c':
+            n_bytes = atoi(optarg);
+            break;
+        case '?':
+            usage(argv);
+            return -1;
         }
-
-        ++i;
     }
 
     if (!n_bytes && !n_lines) {
@@ -108,12 +102,11 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    flags = (start < argc - 1 ? PRINT_NAMES : 0) | PRINT_FIRST;
-    printf("%d, %d\n", start, argc);
-    if (start == argc) {
+    flags = (optind < argc - 1 ? PRINT_NAMES : 0) | PRINT_FIRST;
+    if (optind == argc) {
         head("-", n_lines, n_bytes, &flags);
     } else {
-        for (i = start; i < argc; ++i) {
+        for (i = optind; i < argc; ++i) {
             if (argv[i][0] != '-' || !strcmp(argv[i], "-")) {
                 head(argv[i], n_lines, n_bytes, &flags);
             }
