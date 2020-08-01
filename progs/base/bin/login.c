@@ -163,6 +163,28 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    if (argc != 2) {
+        fprintf(stderr, "usage: login TTY\n");
+        return -1;
+    }
+
+    // Will release 0, 1, 2
+    if (setsid() < 0) {
+        perror("setsid()");
+        return -1;
+    }
+
+    // Open the terminal
+    if (open(argv[1], O_RDONLY, 0) != STDIN_FILENO) {
+        return -1;
+    }
+    if (open(argv[1], O_WRONLY, 0) != STDOUT_FILENO) {
+        return -1;
+    }
+    if (dup(STDOUT_FILENO) != STDERR_FILENO) {
+        return -1;
+    }
+
     signal(SIGINT, signal_handler);
 
     char spnam_buf[128];
