@@ -1,3 +1,4 @@
 kernel-hdr
 build
 progs/rsh
+etc/rc.d/99-imtesting
