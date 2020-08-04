@@ -25,7 +25,8 @@ mkstage-etc:
 			 $(STAGE)/mnt \
 			 $(STAGE)/bin \
 			 $(STAGE)/sys \
-			 $(STAGE)/sbin
+			 $(STAGE)/sbin \
+			 $(STAGE)/tmp
 	cp -r etc $(STAGE)
 
 mkstage-progs:
