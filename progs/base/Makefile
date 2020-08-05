@@ -27,6 +27,7 @@ BINS=$(O)/bin/pager \
 	 $(O)/bin/zcat \
 	 $(O)/bin/showkey \
 	 $(O)/bin/com \
+	 $(O)/bin/tee \
 	 $(O)/sbin/login \
 	 $(O)/sbin/mount \
 	 $(O)/sbin/lspci \
