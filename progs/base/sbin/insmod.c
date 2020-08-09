@@ -1,25 +1,7 @@
-#include <ygg/syscall.h>
+#include <sys/mod.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-
-static __attribute__((optimize("-O0"))) int ygg_module_load(const char *file, const char *args) {
-    register uintptr_t rdi asm("rdi") = (uintptr_t) file;
-    register uintptr_t rsi asm("rsi") = (uintptr_t) args;
-    register uintptr_t rax asm("rax") = SYSCALL_NRX_MODULE_LOAD;
-    asm volatile ("syscall":::"rax","rdi","rsi");
-    (void) rdi;
-    (void) rsi;
-    return (int) rax;
-}
-
-static __attribute__((optimize("-O0"))) int ygg_module_unload(const char *name) {
-    register uintptr_t rdi asm("rdi") = (uintptr_t) name;
-    register uintptr_t rax asm("rax") = SYSCALL_NRX_MODULE_UNLOAD;
-    asm volatile ("syscall":::"rax","rdi");
-    (void) rdi;
-    return (int) rax;
-}
 
 static const char *usage = "Usage: insmod <module path>\n"
                            "  OR   insmod -r <module name>\n";

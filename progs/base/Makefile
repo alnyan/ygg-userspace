@@ -33,14 +33,15 @@ BINS=$(O)/bin/pager \
 	 $(O)/sbin/lspci \
 	 $(O)/sbin/acpid \
 	 $(O)/sbin/reboot \
+	 $(O)/sbin/insmod \
 	 $(O)/bin/date \
 	 $(O)/bin/rm \
+	 $(O)/bin/cp \
 	 $(O)/bin/ls
 
 #	 $(O)/bin/ucat \
 #	 $(O)/bin/mkfifo \
 #	 $(O)/sbin/umount \
-#	 $(O)/sbin/insmod \
 
 all: mkdirs libs $(BINS)
 
