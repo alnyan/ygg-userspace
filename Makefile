@@ -6,7 +6,9 @@ CC=x86_64-elf-yggdrasil-gcc
 
 DIRS=$(STAGE)
 
-all: mkdirs $(O)/initrd.img
+all: mkdirs make-image
+
+make-image: $(O)/initrd.img
 
 clean:
 	rm -rf $(O)
@@ -24,6 +26,7 @@ mkstage-etc:
 	mkdir -p $(STAGE)/dev \
 			 $(STAGE)/mnt \
 			 $(STAGE)/bin \
+			 $(STAGE)/lib \
 			 $(STAGE)/sys \
 			 $(STAGE)/sbin \
 			 $(STAGE)/tmp
