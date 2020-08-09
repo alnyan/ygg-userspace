@@ -6,11 +6,6 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    if (setgid(0) != 0) {
-        perror("setgid()");
-        return -1;
-    }
-
     const char *shell = "/bin/sh";
     const char *argp[] = {
         shell, NULL
