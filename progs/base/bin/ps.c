@@ -19,14 +19,18 @@ int main(int argc, char **argv) {
 
     printf("PID    UID:GID     NAME        PARENT\n");
     while ((ent = readdir(dir))) {
-        if (isdigit(ent->d_name[0])) {
+        if (isdigit(ent->d_name[0]) || ent->d_name[0] == '-') {
             printf("#%-5s ", ent->d_name);
 
             // Process UID:GID
             snprintf(buf, sizeof(buf), FS_PROC "/%s/ioctx", ent->d_name);
             fp = fopen(buf, "r");
             if (!fp || !fgets(buf, sizeof(buf), fp)) {
-                printf("%-11s", "????:????");
+                if (ent->d_name[0] == '-') {
+                    printf("%-11s ", "0:0");
+                } else {
+                    printf("%-11s", "????:????");
+                }
             } else {
                 if (buf[0] && (p = strchr(buf, '\n'))) {
                     *p = 0;
@@ -47,7 +51,11 @@ int main(int argc, char **argv) {
                 if (buf[0] && (p = strchr(buf, '\n'))) {
                     *p = 0;
                 }
-                printf("%-12s", buf);
+                if (ent->d_name[0] == '-') {
+                    printf("[%-9s] ", buf);
+                } else {
+                    printf("%-12s", buf);
+                }
             }
             if (fp) {
                 fclose(fp);
