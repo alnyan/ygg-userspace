@@ -36,6 +36,7 @@ BINS=$(O)/bin/pager \
 	 $(O)/sbin/insmod \
 	 $(O)/bin/date \
 	 $(O)/bin/rm \
+	 $(O)/bin/sha256sum \
 	 $(O)/bin/cp \
 	 $(O)/bin/ls
 
@@ -46,25 +47,26 @@ BINS=$(O)/bin/pager \
 all: mkdirs libs $(BINS)
 
 libs:
-	if [ ! -f $(O)/lib/zlib/Makefile ]; then \
+	@if [ ! -f $(O)/lib/zlib/Makefile ]; then \
 		cd $(O)/lib/zlib && CC=$(CROSS_COMPILE)gcc AR=$(CROSS_COMPILE)ar $(S)/lib/zlib-1.2.11/configure; \
 	fi
-	make -C $(O)/lib/zlib
+	@make -s -C $(O)/lib/zlib
 
 mkdirs:
-	mkdir -p $(O)/bin $(O)/sbin $(O)/lib/zlib
+	-mkdir -p $(O)/bin $(O)/sbin $(O)/lib/zlib
 
 clean:
 	rm -rf $(O)
 
 install: all
-	$(foreach bin,$(BINS),						    		\
+	@$(foreach bin,$(BINS),						    		\
 		install -m0755 $(bin) $(DESTDIR)/$(bin:$(O)/%=%);	\
 	)
-	ln -sf /bin/pager $(DESTDIR)/bin/less
-	ln -sf /bin/pager $(DESTDIR)/bin/more
+	@ln -sf /bin/pager $(DESTDIR)/bin/less
+	@ln -sf /bin/pager $(DESTDIR)/bin/more
 
 $(O)/%: %.c
+	@printf " CC %s\n" "$@"
 	@$(CC) $($(subst /,_,$(@:$(O)/%=%))_FLAGS) \
 		$(LDFLAGS) $(CFLAGS) -o $@ \
 		$< \
