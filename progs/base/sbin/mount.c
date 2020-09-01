@@ -1,112 +1,126 @@
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <stdio.h>
+#include <err.h>
 
-static void usage(void) {
-    printf("Usage: mount [-t type] device target\n");
+static void usage(const char *prog) {
+    fprintf(stderr, "Usage: %s [-t TYPE] [-o OPTIONS] [DEVICE] TARGET\n", prog);
 }
 
-int main(int argc, char **argv) {
-    int res;
-    uint32_t mount_flags = 0;
+static int do_mount(const char *src, const char *tgt, const char *type, uint32_t opts) {
     struct stat st;
-    const char *type = NULL;
-    const char *src = NULL;
-    const char *dst = NULL;
-    uid_t uid;
+    int res;
 
-    // Crude attempt at getopt()
-    for (int i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-') {
-            switch (argv[i][1]) {
-            case 't':
-                if (i == argc - 1) {
-                    usage();
-                    return -1;
-                }
-                type = argv[i + 1];
-                ++i;
-                break;
-            case 'o':
-                if (i == argc - 1) {
-                    usage();
-                    return -1;
-                }
-                ++i;
-                if (!strcmp(argv[i], "sync")) {
-                    mount_flags |= MS_SYNCHRONOUS;
-                } else if (!strcmp(argv[i], "ro")) {
-                    mount_flags |= MS_RDONLY;
-                } else {
-                    printf("Unknown option: -o %s\n", argv[i]);
-                    usage();
-                    return -1;
-                }
-                break;
-            default:
-                usage();
-                return -1;
-            }
-
-            continue;
-        }
-
-        if (!src) {
-            src = argv[i];
-        } else if (!dst) {
-            dst = argv[i];
-        } else {
-            usage();
-            return -1;
-        }
-    }
-
-    if (!dst) {
-        dst = src;
-        src = NULL;
-    }
-    if (!dst) {
-        usage();
-        return -1;
-    }
-
-    // Check that UID is 0
-    if ((uid = getuid()) != 0) {
-        printf("mount should be run as root\n");
-        return -1;
-    }
-
+    // Check that (if specified) source is a block device
     if (src) {
         // Check that "src" is a block device
         if ((res = stat(src, &st)) != 0) {
-            perror(src);
             return -1;
         }
 
         if ((st.st_mode & S_IFMT) != S_IFBLK) {
-            printf("%s: Not a block device\n", src);
+            errno = ENOTBLK;
             return -1;
         }
     }
 
-    // Check that "dst" is a directory
-    // TODO: stat() is fucked
-    //if ((res = stat(dst, &st)) != 0) {
-    //    perror(dst);
-    //    return -1;
-    //}
-
-    //if ((st.st_mode & S_IFMT) != S_IFDIR) {
-    //    printf("%s: Not a directory\n", dst);
-    //    return -1;
-    //}
+    // Check that target is a directory
+    if ((res = stat(tgt, &st)) != 0) {
+        return -1;
+    }
+    if ((st.st_mode & S_IFMT) != S_IFDIR) {
+        errno = ENOTDIR;
+        return -1;
+    }
 
     // Do the magic stuff
-    if ((res = mount(src, dst, type, mount_flags, NULL)) != 0) {
-        perror("mount()");
-        return -1;
+    return mount(src, tgt, type, opts, NULL);
+}
+
+static int parse_flags(const char *prog, char *str, uint32_t *flags) {
+    char *p, *e, *q;
+
+    p = str;
+    while (p) {
+        e = strchr(p, ',');
+        q = strchr(p, '=');
+
+        if (e && q > e) {
+            q = 0;
+        }
+        if (e) {
+            *e = 0;
+        }
+        if (q) {
+            *q++ = 0;
+        }
+
+        if (!strcmp(p, "ro")) {
+            *flags |= MS_RDONLY;
+        } else if (!strcmp(p, "sync")) {
+            *flags |= MS_SYNCHRONOUS;
+        } else {
+            fprintf(stderr, "%s: unknown option: %s\n", prog, p);
+            return -1;
+        }
+
+        if (e) {
+            p = e + 1;
+        } else {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    static const char *opts = "t:o:";
+    const char *dev = NULL;
+    const char *target = NULL;
+    const char *type = NULL;
+    uint32_t flags = 0;
+    int optc;
+
+    if (getuid() != 0) {
+        fprintf(stderr, "%s: must be run by root\n", argv[0]);
+        exit(-1);
+    }
+
+    while ((optc = getopt(argc, argv, opts)) != -1) {
+        switch (optc) {
+        case 't':
+            type = optarg;
+            break;
+        case 'o':
+            if (parse_flags(argv[0], optarg, &flags) != 0) {
+                usage(argv[0]);
+                exit(-1);
+            }
+            break;
+        default:
+        case '?':
+            usage(argv[0]);
+            exit(-1);
+        }
+    }
+
+    if (optind == argc - 1) {
+        target = argv[optind];
+    } else if (optind == argc - 2) {
+        dev = argv[optind];
+        target = argv[optind + 1];
+    } else {
+        usage(argv[0]);
+        exit(-1);
+    }
+
+    if (do_mount(dev, target, type, flags) != 0) {
+        err(-1, "mount");
     }
 
     return 0;
