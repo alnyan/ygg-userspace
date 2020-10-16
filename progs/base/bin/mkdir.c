@@ -1,5 +1,6 @@
 #include <sys/stat.h>
 #include <stdio.h>
+#include <err.h>
 
 int main(int argc, char **argv) {
     if (argc <= 1) {
@@ -11,9 +12,9 @@ int main(int argc, char **argv) {
     int ores;
 
     for (int i = 1; i < argc; ++i) {
-        ores = mkdir(argv[i], 0755);
+        ores = mkdir(argv[i], 0777);
         if (ores != 0) {
-            perror(argv[i]);
+            warn("mkdir(%s)", argv[i]);
         }
         res += ores;
     }
