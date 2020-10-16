@@ -29,7 +29,7 @@ static int grep_match(const char *line, const char *pattern) {
 #define MATCH_ZERO_MORE     3
 #define MATCH_ONE_OPT       4
     int match_type = MATCH_NONE;
-    int match_char;
+    int match_char = 0;
 
     // Line:  abcdef abcdef
     // p:     abcdef abcdef
