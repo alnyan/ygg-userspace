@@ -1,20 +1,17 @@
-// TODO
-//#include <sys/mount.h>
+#include <sys/mount.h>
 #include <stdio.h>
-
-int umount(const char *target);
+#include <err.h>
 
 int main(int argc, char **argv) {
     int res;
 
     if (argc != 2) {
-        printf("Usage: umount dir\n");
+        fprintf(stderr, "Usage: umount dir\n");
         return -1;
     }
 
     if ((res = umount(argv[1])) != 0) {
-        perror(argv[1]);
-        return -1;
+        err("umount(%s)", argv[1]);
     }
 
     return 0;

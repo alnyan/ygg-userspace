@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <err.h>
 
 #define DIR_DEFAULT         "/etc/rc.d"
 
@@ -11,6 +12,7 @@ static int rc_script_exec(const char *path, const char *arg) {
     int pid = fork();
 
     if (pid < 0) {
+        warn("fork()");
         return -1;
     }
 
@@ -25,7 +27,7 @@ static int rc_script_exec(const char *path, const char *arg) {
 
         t = waitpid(pid, &res, 0);
         if (t < 0) {
-            perror("waitpid()");
+            warn("waitpid()");
             return -1;
         }
 
@@ -36,7 +38,7 @@ static int rc_script_exec(const char *path, const char *arg) {
 static int rc_load_dir(const char *path, const char *action) {
     DIR *dir = opendir(path);
     if (!dir) {
-        perror(path);
+        warn("opendir(%s)", path);
         return -1;
     }
     struct dirent *ent;

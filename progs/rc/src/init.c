@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <err.h>
 
 #define INITTAB         "/etc/inittab"
 // Default runlevel
@@ -44,7 +45,7 @@ static int load_inittab(struct rc_rule **_head) {
     // Parse and execute rules from inittab
     fp = fopen(INITTAB, "r");
     if (!fp) {
-        perror(INITTAB);
+        warn("fopen(%s)", INITTAB);
         return -1;
     }
 
@@ -175,7 +176,7 @@ static int rc_start(const struct rc_rule *rule) {
     ygg_debug_trace("rc: start `%s`\n", rule->argv[0]);
 
     if ((pid = fork()) < 0) {
-        perror("fork()");
+        warn("fork()");
         return -1;
     }
 
