@@ -52,6 +52,7 @@ struct options {
 struct entry {
     int valid, type;
     char name[256];
+    char link_dst[256];
     struct stat stat;
 };
 
@@ -185,6 +186,12 @@ static void entry_print(const struct options *opt, const struct entry *ent, int 
 
     printf("%s", ent->name);
 
+    if (opt->format == FMT_LONG &&
+        (ent->stat.st_mode & S_IFMT) == S_IFLNK &&
+        ent->link_dst[0]) {
+        printf(" -> %s", ent->link_dst);
+    }
+
     if (opt->flags & OPT_DIR_SUFFIX) {
         if (ent->type == DT_DIR) {
             fputc('/', stdout);
@@ -219,6 +226,10 @@ static void fetch_entry(const struct options *opt, struct entry *ent, const char
         ent->type = DT_DIR;
         break;
     case S_IFLNK:
+        ent->link_dst[0] = 0;
+        if (opt->format == FMT_LONG) {
+            readlink(path, ent->link_dst, sizeof(ent->link_dst));
+        }
         ent->type = DT_LNK;
         break;
     default:
